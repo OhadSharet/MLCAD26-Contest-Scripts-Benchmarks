@@ -1,0 +1,2 @@
+# Equivalence Checking for MLCAD26 Contest  
+This directory contains scripts and benchmarks for equivalence checking, which is a crucial step in verifying the functional correctness of circuit designs. The tools provided here allow participants to compare two implementations of a circuit to ensure they produce the same outputs for the same inputs, thus confirming their equivalence.
