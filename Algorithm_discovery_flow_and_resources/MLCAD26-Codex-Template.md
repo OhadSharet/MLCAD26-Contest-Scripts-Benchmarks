@@ -15,6 +15,7 @@ Algorithm discovery via an LLM agent follows a simple iterative loop:
 │   ┌──────────┐    ┌──────────┐    ┌──────────┐    ┌─────────┐   │
 │   │  Prompt  │───▶│   LLM    │───▶│  Build   │───▶│  Run    │   │
 │   │  + State │    │  Agent   │    │  / Test  │    │  Eval   │   │
+|   |          |    |          |    | OpenROAD |    |         |   | 
 │   └──────────┘    └──────────┘    └──────────┘    └────┬────┘   │
 │        ▲                                               │        │
 │        └───────────────────────────────────────────────┘        │
@@ -30,21 +31,26 @@ Each iteration, the agent:
 
 ---
 
-## Repository Structure
+## Sample Repository Structure
 
 ```
-your-project/
+MLCAD2026_Contest/
 ├── run_agent.sh              # Master loop script (calls agent N times)
 ├── run_single_iteration.sh   # Calls the CLI tool for one iteration
 ├── AGENTS.md                 # Agent instruction file (see below)
-├── algorithms/               # Directory of candidate algorithm implementations
-│   ├── baseline/
-│   └── candidates/
-├── results/                  # Evaluation outputs, logs, diagrams
+├── OpenROAD/                 
+│   ├── src/
+│       ├── rsz/               # Directory Containing resizer source code with new added candidates/moves
+│           ├── <candidate 1> 
+│           ├── <candidate 2> 
+│           ├──  ...
+│           └── <candidate n> 
+| 
+├── results/                    # Evaluation outputs, logs, diagrams
 └── scripts/
-    ├── build.sh              # Build script for your tool/simulator
-    ├── evaluate.sh           # Run evaluation and collect metrics
-    └── summarize.sh          # Generate a results summary / diagram for the agent
+    ├── buildOpenROAD.sh        # Build script for your tool/simulator
+    └── evaluate_new_solution.sh             # Run evaluation script and collect metrics
+   
 ```
 
 ---
@@ -63,23 +69,24 @@ Read all sections below in order before taking any action. Do not skip sections.
 
 ## 1. Context & Goal
 
-**Task:** [Describe the algorithm discovery task in one paragraph. What problem are you solving? What metric are you optimizing?]
+**Task:**  
+[Describe the algorithm discovery task in one paragraph. What problem are you solving? What metric are you optimizing?]
 
 **Example:**
-> You are discovering improved placement algorithms for physical design. The goal is to minimize
-> total wirelength while meeting timing constraints. Candidate algorithms are located in
-> `algorithms/candidates/`. The baseline is in `algorithms/baseline/`.
+> You are discovering improved timing algorithms for physical design. The goal is to minimize
+> TNS and WNS for a specific design to meet timing constraints. Candidate algorithms are located in
+> `OpenROAD/src/rsz`. 
 
-**Metric to optimize:** [e.g., minimize wirelength, maximize throughput, reduce runtime]
+**Metric to optimize:** [e.g., WNS/TNS by creating new Resizer moves]
 
 ---
 
 ## 2. Algorithm Discovery Rules
 
 - Generate **one new candidate** per iteration. Do not modify multiple algorithms at once.
-- Base your new candidate on the best-performing algorithm so far (see `results/best.txt`).
-- You may use techniques such as: [list relevant search strategies, e.g., parameter tuning, structural modifications, hybridization].
-- Name each new candidate with an incrementing ID: `candidate_001`, `candidate_002`, etc.
+- Base your new candidate on the best-performing algorithm so far (see `results/METRICS_LOG.txt`).
+- You may use techniques such as: [list relevant search strategies, e.g., parameter tuning, structural modifications, hybridization, or propose new moves for resizer].
+- Name each new candidate with an incrementing ID: `candidate_1`, `candidate_2`, etc.
 - Write clean, well-commented code.
 
 ---
@@ -88,7 +95,7 @@ Read all sections below in order before taking any action. Do not skip sections.
 
 Use the following script to build after generating a new candidate:
 
-bash scripts/build.sh <candidate_name>
+bash scripts/buildOpenROAD.sh <candidate_name>
 
 If the build fails, read the error output, fix the issue, and rebuild before proceeding.
 
@@ -98,22 +105,20 @@ If the build fails, read the error output, fix the issue, and rebuild before pro
 
 After a successful build, run the evaluator:
 
-bash scripts/evaluate.sh <candidate_name>
+bash scripts/evaluate_new_solution.sh <candidate_name>
 
-Results will be written to `results/<candidate_name>/metrics.txt` and a diagram will be
-saved to `results/<candidate_name>/diagram.png`.
-
-Read the results carefully before deciding on your next action.
+Results should be written to `results/<candidate_name>/METRIC_LOG.txt` 
+Read the results and changes that you made carefully by reading logs before deciding on your next action.
 
 ---
 
 ## 5. Available Scripts
 
-| Script                       | Purpose                               |
-| ---------------------------- | ------------------------------------- |
-| `scripts/build.sh <name>`    | Compile / set up the candidate        |
-| `scripts/evaluate.sh <name>` | Run the evaluation harness            |
-| `scripts/summarize.sh`       | Print a summary of all results so far |
+| Script                                    | Purpose                                  |
+| ----------------------------------------- | ---------------------------------------- |
+| `scripts/buildOpenROAD.sh <name>`         | Compile OpenROAD with new Resizer change |
+| `scripts/evaluate_new_solution.sh <name>` | Run script to test new solution          |
+
 
 ---
 
@@ -194,11 +199,10 @@ exit $?  # Propagate exit code so run_agent.sh can detect termination
 
 The agent reads `AGENTS.md` fresh on every iteration, so the simplest way to maintain state is to **write results files that the agent can read**.
 
-Consider including in your `evaluate.sh` or `summarize.sh`:
+Consider including in your `evaluate_new_solution.sh` 
 
 - `results/best.txt` — name and score of the best candidate so far
 - `results/history.csv` — iteration, candidate name, metric value
-- `results/<candidate>/diagram.png` or a `.txt` summary — visual or textual feedback
 
 **Tips:**
 - Keep feedback files concise. The agent has a finite context window.
@@ -212,18 +216,17 @@ Consider including in your `evaluate.sh` or `summarize.sh`:
 | You want to...                | Change this                                                                                     |
 | ----------------------------- | ----------------------------------------------------------------------------------------------- |
 | Use a different CLI tool      | Replace the command in `run_single_iteration.sh`                                                |
-| Change the evaluation harness | Update `scripts/evaluate.sh` and Section 4 of `AGENTS.md`                                       |
+| Change the evaluation harness | Update `scripts/evaluate_new_solution.sh` and Section 4 of `AGENTS.md`                          |
 | Add more stopping conditions  | Extend Section 6 of `AGENTS.md` and the exit code logic in `run_agent.sh`                       |
 | Run in parallel               | Wrap `run_single_iteration.sh` in a parallel job manager; write results to separate directories |
 | Track experiments             | Add a logging block in `run_agent.sh` to capture timestamps and summaries                       |
-
 ---
 
 ## Checklist Before Running
 
 - [ ] CLI tool is installed and authenticated
 - [ ] `AGENTS.md` is populated with your specific task, paths, and termination criteria
-- [ ] `scripts/build.sh` and `scripts/evaluate.sh` work on a test candidate
+- [ ] `scripts/buildOpenROAD.sh` and `scripts/evaluate_new_solution.sh` work on a test candidate
 - [ ] `algorithms/baseline/` contains a known-good reference implementation
 - [ ] `results/` directory exists and is writable
 - [ ] `MAX_ITER` in `run_agent.sh` is set appropriately
