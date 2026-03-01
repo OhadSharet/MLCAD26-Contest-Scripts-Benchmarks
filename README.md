@@ -8,15 +8,14 @@ Prior timing-optimization contests have largely relied on fixed heuristics appli
 
 
 
-## Build OpenROAD
+## Install and Build OpenROAD
 
 ### Build locally
 
-Please use the copy of OpenROAD provided in this directory. We have slightly modifed the OpenSTA module for logic equivalence, and will use this same copy of OpenROAD to evaluate participant's solutions. 
+Please use the copy of OpenROAD provided in this directory. We will use this same copy of OpenROAD to evaluate participant's solutions. We have slightly changed the source code in this version of OpenROAD to check for logic equivalence, and participants are recommened to use this copy of OpenROAD to avoid any inconsistencies in their own evaluation. 
 
-Install dependencies for OpenROAD:
+
 ```
-
 git clone https://github.com/ASU-VDA-Lab/MLCAD26-Contest-Scripts-Benchmarks.git
 cd OpenROAD 
 sudo ./etc/DependencyInstaller.sh -all
