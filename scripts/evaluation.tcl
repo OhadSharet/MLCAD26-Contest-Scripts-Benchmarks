@@ -30,8 +30,9 @@ foreach lib_file ${libbest} { read_liberty $lib_file }
 
 read_def      $def_file
 read_verilog  $verilog_netlist
-
+link_design $design_name
 read_sdc $sdc_file
+
 #set_propagated_clock [get_clocks *]
 set_ideal_network [all_clocks]
 
@@ -46,7 +47,7 @@ set placement_legal [is_placement_legal]
 if {$placement_legal} {
   puts "Placement is legal"
 } else {
-  puts stderr "ERROR: Placement is NOT legal"
+  puts stderr "ERROR: Placement is NOT legal (continuing)"
   exit 1
 }
 
@@ -65,7 +66,6 @@ if {[catch { global_route -skip_large_fanout_nets 300 -allow_congestion -congest
   puts "INFO: global_route failed on first attempt: $gr_err"
   puts "INFO: running detailed_placement, then retrying global_route..."
   set placement_legal 0
-
   detailed_placement
   if {[catch { global_route -skip_large_fanout_nets 300 -allow_congestion } gr_err2]} {
     puts stderr "ERROR: global_route still failing after detailed_placement: $gr_err2"
