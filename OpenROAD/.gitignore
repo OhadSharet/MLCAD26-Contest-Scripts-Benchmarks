@@ -19,6 +19,7 @@ TAGS
 .DS_Store
 .cache
 Makefile
+!third-party/abc/Makefile
 __pycache__
 venv/
 .abc_history
