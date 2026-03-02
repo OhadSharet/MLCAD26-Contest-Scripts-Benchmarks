@@ -5,8 +5,8 @@ set design_name     "$::env(DESIGN_NAME)"
 set crfile          "$::env(CONGESTION_REPORT)"
 set folder          "$::env(FOLDER_NAME)"
 
-set lib_setup_file    "lib_setup.tcl"
-set design_setup_file "design_setup.tcl"
+set lib_setup_file    "${design_name}/lib_setup.tcl"
+set design_setup_file "${design_name}/design_setup.tcl"
 
 set start [clock seconds]
 source $lib_setup_file
@@ -28,9 +28,14 @@ proc is_placement_legal {} {
 foreach lef_file ${lefs}    { read_lef     $lef_file }
 foreach lib_file ${libbest} { read_liberty $lib_file }
 
+
+puts $def_file 
+puts $verilog_netlist
+puts $sdc_file
+
+
 read_def      $def_file
 read_verilog  $verilog_netlist
-link_design $design_name
 read_sdc $sdc_file
 
 #set_propagated_clock [get_clocks *]
@@ -88,9 +93,9 @@ report_units
 report_tns
 report_wns
 report_power
+puts "report_tns"
 
-
-
+exit
 # ---- global routing overflow -----
 puts "Start Global Routing Results Analysis ..."
 set block [ord::get_db_block]
