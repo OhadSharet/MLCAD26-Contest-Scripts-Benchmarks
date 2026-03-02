@@ -1,5 +1,5 @@
-set libdir "/MLCAD26-Contest-Scripts-Benchmarks/asap7/lib/NLDM"
-set lefdir "/MLCAD26-Contest-Scripts-Benchmarks/asap7/lef"
+set libdir "/root/MLCAD26-Contest-Scripts-Benchmarks/asap7/lib/NLDM"
+set lefdir "/root/MLCAD26-Contest-Scripts-Benchmarks/asap7/lef"
 
 set libworst "
   ${libdir}/asap7sc7p5t_SEQ_LVT_FF_nldm_220123.lib \
@@ -79,6 +79,6 @@ set lefs "
   ${lefdir}/asap7sc7p5t_DFHV2X.lef \
   "
 
-set rc_file "/home/jethiraj/MLCAD26-Contest-Scripts-Benchmarks/asap7/setRC.tcl"
+set rc_file "/root/MLCAD26-Contest-Scripts-Benchmarks/asap7/setRC.tcl"
 
 
