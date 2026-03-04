@@ -8,7 +8,7 @@ Prior timing-optimization contests have largely relied on fixed heuristics appli
 
 ## Table of Content
   - [*asap7*](./asap7): ASAP7 cell library for the designs.
-  - [*Benchmarks*](./Benchmarks): Contains benchmark designs against which contestants have to improve their resizer.
+  - [*benchmarks*](./benchmarks): Contains benchmark designs against which contestants have to improve their resizer.
   - [*equiv_check*](./equiv_check): Scripts to check netlist equivalence.
   - [*OpenROAD*](https://github.com/taizun-jj202/OpenROAD): Version of OpenROAD that will be used to compare contestants solutions. 
   - [*sample_algorithm_discovery_flow_and_resources*](./sample_algorithm_discovery_flow_and_resources): Folder containing sample Algorithm-discovery flow and relevant research papers
