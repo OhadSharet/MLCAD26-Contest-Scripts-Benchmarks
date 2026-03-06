@@ -32,3 +32,7 @@ sudo ./etc/DependencyInstaller.sh -all
 
 ```
 
+
+## Questions 
+
+Questions related to the contest can be emailed to [mlcad2026-contest@googlegroups.com](mlcad2026-contest@googlegroups.com) or can be filed as issues in this GitHub repo [here](https://github.com/ASU-VDA-Lab/MLCAD26-Contest-Scripts-Benchmarks/issues)
