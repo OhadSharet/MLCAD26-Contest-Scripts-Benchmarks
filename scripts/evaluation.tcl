@@ -5,8 +5,8 @@ set design_name     "$::env(DESIGN_NAME)"
 set crfile          "$::env(CONGESTION_REPORT)"
 set folder          "$::env(FOLDER_NAME)"
 
-set lib_setup_file    "lib_setup.tcl"
-set design_setup_file "design_setup.tcl"
+set lib_setup_file    "${design_name}/lib_setup.tcl"
+set design_setup_file "${design_name}/design_setup.tcl"
 
 set start [clock seconds]
 source $lib_setup_file
@@ -25,13 +25,20 @@ proc is_placement_legal {} {
 }
 
 # ================== (1) read tech, libs, DEF, netlist, link ==================
-foreach lef_file ${lefs}    { read_lef     $lef_file }
-foreach lib_file ${libbest} { read_liberty $lib_file }
+#foreach lef_file ${lefs}    { read_lef     $lef_file }
+#foreach lib_file ${libbest} { read_liberty $lib_file }
+
+
+puts $def_file 
+puts $verilog_netlist
+puts $sdc_file
+
 
 read_def      $def_file
 read_verilog  $verilog_netlist
 
 read_sdc $sdc_file
+
 #set_propagated_clock [get_clocks *]
 set_ideal_network [all_clocks]
 
@@ -40,13 +47,16 @@ source $rc_file
 set_cmd_units -time ns -capacitance pF -current mA -voltage V -resistance kOhm -distance um -power mW
 set_units -power mW
 
+puts "report_design_area start"
+report_design_area 
+
 # ================== (2) Check placement legality ==================
 puts "### Check placement legality ###"
 set placement_legal [is_placement_legal]
 if {$placement_legal} {
   puts "Placement is legal"
 } else {
-  puts stderr "ERROR: Placement is NOT legal"
+  puts stderr "ERROR: Placement is NOT legal (continuing)"
   exit 1
 }
 
@@ -65,13 +75,15 @@ if {[catch { global_route -skip_large_fanout_nets 300 -allow_congestion -congest
   puts "INFO: global_route failed on first attempt: $gr_err"
   puts "INFO: running detailed_placement, then retrying global_route..."
   set placement_legal 0
-
   detailed_placement
   if {[catch { global_route -skip_large_fanout_nets 300 -allow_congestion } gr_err2]} {
     puts stderr "ERROR: global_route still failing after detailed_placement: $gr_err2"
     exit 2
   }
 }
+
+puts "report_design_area after legalization"
+report_design_area
 
 # Estimate parasitics using global routing
 estimate_parasitics -global_routing
@@ -86,10 +98,9 @@ puts "placement_legal:        $placement_legal"
 puts [format "total_insts:            %d" $TOTAL_INSTS]
 report_units
 report_tns
-report_wns
+report_wns -digits 4
 report_power
-
-
+puts "report_tns"
 
 # ---- global routing overflow -----
 puts "Start Global Routing Results Analysis ..."
@@ -103,6 +114,9 @@ foreach layer [$tech getLayers] {
     lappend layers $layer
   }
 }
+
+puts "report_design_area after global_route"
+report_design_area
 
 # set layers [lsort -unique $layers]
 set gird_x_count [llength [$gcellgrid getGridX]]
@@ -131,7 +145,9 @@ puts "End Global Routing Results Analysis ..."
 
 report_check_types -max_slew         -violators 
 report_check_types -max_capacitance  -violators 
-report_check_types -max_fanout       -violators 
+report_check_types -max_fanout       -violators
+puts "report_design_area end"
+report_design_area 
 
 
 puts "\[INFO\] Flow running time:   [expr {$end - $start}] second"
