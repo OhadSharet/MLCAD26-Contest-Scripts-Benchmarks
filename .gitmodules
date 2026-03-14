@@ -1,3 +1,4 @@
 [submodule "OpenROAD"]
 	path = OpenROAD
 	url = https://github.com/taizun-jj202/OpenROAD.git
+	branch = MLCAD26
