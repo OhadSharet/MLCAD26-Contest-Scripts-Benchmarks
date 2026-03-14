@@ -80,12 +80,12 @@ python3 scripts/compute_score.py \
 
 Score formula: `Sfinal = SPPA − PERC − R − cur_dis − Poverflow`
 
-| Term | Description |
-|------|-------------|
-| `SPPA` | TNS + dynamic power + leakage power improvement |
-| `PERC` | Slew, capacitance, fanout violation penalty |
-| `R` | Runtime penalty (tool + flow) |
-| `cur_dis` | Average logic cell displacement compared to baseline penalty |
-| `Poverflow` | Global routing overflow penalty |
+| Term        | Description                                                  |
+| ----------- | ------------------------------------------------------------ |
+| `SPPA`      | TNS + dynamic power + leakage power improvement              |
+| `PERC`      | Slew, capacitance, fanout violation penalty                  |
+| `R`         | Runtime penalty (tool + flow)                                |
+| `cur_dis`   | Average logic cell displacement compared to baseline penalty |
+| `Poverflow` | Global routing overflow penalty                              |
 
 ---
