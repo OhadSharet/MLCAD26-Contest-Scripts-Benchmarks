@@ -35,7 +35,7 @@ After running placement or logic optimizations, this tool verifies that the opti
 - Python 3.x
 - OpenROAD (for exporting post-opt data via `OpenROAD_utils.tcl`)
 - Pre-extracted benchmark data under `./benchmarks/`
-- ASAP7 equivalent cell list at `./validity_check/asap7_equivalent_cell_list.csv`
+- ASAP7 equivalent cell list at `./evaluation/validity_check/asap7_equivalent_cell_list.csv`
 
 ---
 
@@ -49,11 +49,11 @@ Describes all instances and I/O ports:
 Name,Master,Type,llx,lly
 ```
 
-| Field | Description |
-|-------|-------------|
-| `Name` | Instance or I/O port name |
-| `Master` | Master cell name (`NA` for I/O ports) |
-| `Type` | `Macro`, `Inst`, or `IO` |
+| Field        | Description                                                  |
+| ------------ | ------------------------------------------------------------ |
+| `Name`       | Instance or I/O port name                                    |
+| `Master`     | Master cell name (`NA` for I/O ports)                        |
+| `Type`       | `Macro`, `Inst`, or `IO`                                     |
 | `llx`, `lly` | Lower-left coordinates (microns) for instances; x,y for I/Os |
 
 ### `nets.csv`
@@ -74,31 +74,46 @@ net_name,driver_inst pin_name,sink1_inst pin_name,sink2_inst pin_name,...
 
 ### Step 1 — Export Post-Optimization Data
 
-In OpenROAD, source `OpenROAD_utils.tcl` and call `write_node_and_net_files` after loading your optimized design:
+
+- Use the following commands to source the validity_check scripts against your own optimized DEF and netlist files. 
+- Source the `lib_setup.tcl` and `design_setup.tcl` files from the corresponding benchmarks `evaluation` folder. 
+- Change the paths to the optimized DEF, optimized verilog netlist files and the benchmark sdc file according to the benchmark design you are working on.
 
 ```tcl
-source OpenROAD_utils.tcl
+#Launch OpenROAD 
+/root/MLCAD26-Contest-Scripts-Benchmarks/OpenROAD/build/bin/openroad
 
-# ... load your design ...
+# Source the OpenROAD utils script
+source /root/MLCAD26-Contest-Scripts-Benchmarks/evaluation/validity_check/OpenROAD_utils.tcl
 
+# Load the benchmark setup files
+source evaluation/<benchmark>/libsetup.tcl 
+
+# Load your **Optimized** DEF and verilog netlists
+read_def     <path/to/your/optimized/DEF/file/for/the/specific/benchmakr>
+read_verilog <path/to/your/optimized/verilog/netlist/file/for/the/specific/benchmark>
+read_sdc     <path/to/the/benchmarks/sdc/file> # Read this file from the benchmarks/ folder.
+ 
 write_node_and_net_files "node.csv" "nets.csv"
 ```
 
 ### Step 2 — Run Equivalence Check
 
+Please note that `nodes.csv` and `nets.csv` files must be in the same folder.
+
 ```bash
 python3 def_validity_check.py \
-    --pre_opt ./benchmarks/jpeg_encoder/ \
-    --post_opt /path/to/your/optimized/design/
+    --pre_opt <path/to/benchmark> \
+    --post_opt </path/to/your/optimized/design/folder/containing/nodes.csv/and/nets.csv>
 ```
 
 #### Optional Arguments
 
-| Argument | Description | Default |
-|----------|-------------|---------|
-| `--pre_opt` | Path to benchmark directory containing `node.csv` and `nets.csv` | *(required)* |
-| `--post_opt` | Path to contest post-optimization directory containing `node.csv` and `nets.csv` | *(required)* |
-| `--equiv_cells` | Path to equivalent cells CSV file | `./validity_check/asap7_equivalent_cell_list.csv` |
+| Argument        | Description                                                                      | Default                                                      |
+| --------------- | -------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| `--pre_opt`     | Path to benchmark directory containing `node.csv` and `nets.csv`                 | *(required)*                                                 |
+| `--post_opt`    | Path to contest post-optimization directory containing `node.csv` and `nets.csv` | *(required)*                                                 |
+| `--equiv_cells` | Path to equivalent cells CSV file                                                | `./evaluation/validity_check/asap7_equivalent_cell_list.csv` |
 
 ---
 
@@ -149,10 +164,10 @@ All I/O ports must remain at their original positions.
 
 ## Return Codes
 
-| Code | Meaning |
-|------|---------|
-| `0` | Netlists are **VALID** — all 3 checks passed |
-| `1` | Netlists are **NOT VALID** — one or more checks failed |
+| Code | Meaning                                                |
+| ---- | ------------------------------------------------------ |
+| `0`  | Netlists are **VALID** — all 3 checks passed           |
+| `1`  | Netlists are **NOT VALID** — one or more checks failed |
 
 
 ---
