@@ -13,7 +13,7 @@ Prior timing-optimization contests have largely relied on fixed heuristics appli
   - [*OpenROAD*](https://github.com/taizun-jj202/OpenROAD): Version of OpenROAD that will be used to compare contestants solutions. 
   - [*sample_algorithm_discovery_flow_and_resources*](./sample_algorithm_discovery_flow_and_resources): Folder containing sample Algorithm-discovery flow and relevant research papers
   - [*MLCAD2026-Contest-Proposal-Algorithm-Discovery.pdf*](./MLCAD2026-Contest-Proposal-Algorithm-Discovery.pdf): Contest description.
-  - [*scripts*](./scripts): Folder containing evaluation flow and related scripts.
+
     
 
 ## Install and Build OpenROAD
