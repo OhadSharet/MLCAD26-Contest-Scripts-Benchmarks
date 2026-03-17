@@ -1,17 +1,38 @@
-set tech_lef "/root/MLCAD26-Contest-Scripts-Benchmarks/asap7/lef/asap7_tech_*.lef"       ;# tech LEF (glob ok)
-set std_lef  "/root/MLCAD26-Contest-Scripts-Benchmarks/asap7/lef/asap7sc7p5t*.lef"       ;# stdcell LEF (glob ok)
-set lib_dir  "/root/MLCAD26-Contest-Scripts-Benchmarks/asap7/lib/NLDM"
+set tech_lef "/root/MLCAD26-Contest-Scripts-Benchmarks/asap7/lef/asap7_tech_1x_201209.lef"
 
-# Load tech + stdcell LEFs
-foreach lef [concat [glob -nocomplain $tech_lef] [glob -nocomplain $std_lef]] {
-  if {[file exists $lef]} { puts "READ_LEF: $lef"; read_lef $lef }
-}
+set std_lef [list \
+  /root/MLCAD26-Contest-Scripts-Benchmarks/asap7/lef/asap7sc7p5t_28_L_1x_220121a.lef \
+  /root/MLCAD26-Contest-Scripts-Benchmarks/asap7/lef/asap7sc7p5t_28_R_1x_220121a.lef \
+  /root/MLCAD26-Contest-Scripts-Benchmarks/asap7/lef/asap7sc7p5t_28_SL_1x_220121a.lef \
+  /root/MLCAD26-Contest-Scripts-Benchmarks/asap7/lef/asap7sc7p5t_28_SRAM_1x_220121a.lef \
+  /root/MLCAD26-Contest-Scripts-Benchmarks/asap7/lef/sram_asap7_16x256_1rw.lef]
 
-# Clean & load Liberty files
-set lib_files [concat [glob -nocomplain $lib_dir/*FF*.lib] [glob -nocomplain $lib_dir/*FF*.lib.gz]]
-if {[llength $lib_files] == 0} {
-  puts "ERROR: No .lib in $lib_dir (OpenROAD needs .lib, not .db)"; exit 1
-}
+set lib_files [list \
+  /root/MLCAD26-Contest-Scripts-Benchmarks/asap7/lib/NLDM/asap7sc7p5t_AO_LVT_FF_nldm_211120.lib.gz \
+  /root/MLCAD26-Contest-Scripts-Benchmarks/asap7/lib/NLDM/asap7sc7p5t_AO_RVT_FF_nldm_211120.lib.gz \
+  /root/MLCAD26-Contest-Scripts-Benchmarks/asap7/lib/NLDM/asap7sc7p5t_AO_SLVT_FF_nldm_211120.lib.gz \
+  /root/MLCAD26-Contest-Scripts-Benchmarks/asap7/lib/NLDM/asap7sc7p5t_INVBUF_LVT_FF_nldm_220122.lib.gz \
+  /root/MLCAD26-Contest-Scripts-Benchmarks/asap7/lib/NLDM/asap7sc7p5t_INVBUF_RVT_FF_nldm_220122.lib.gz \
+  /root/MLCAD26-Contest-Scripts-Benchmarks/asap7/lib/NLDM/asap7sc7p5t_INVBUF_SLVT_FF_nldm_220122.lib.gz \
+  /root/MLCAD26-Contest-Scripts-Benchmarks/asap7/lib/NLDM/asap7sc7p5t_OA_LVT_FF_nldm_211120.lib.gz \
+  /root/MLCAD26-Contest-Scripts-Benchmarks/asap7/lib/NLDM/asap7sc7p5t_OA_RVT_FF_nldm_211120.lib.gz \
+  /root/MLCAD26-Contest-Scripts-Benchmarks/asap7/lib/NLDM/asap7sc7p5t_OA_SLVT_FF_nldm_211120.lib.gz \
+  /root/MLCAD26-Contest-Scripts-Benchmarks/asap7/lib/NLDM/asap7sc7p5t_SEQ_LVT_FF_nldm_220123.lib \
+  /root/MLCAD26-Contest-Scripts-Benchmarks/asap7/lib/NLDM/asap7sc7p5t_SEQ_RVT_FF_nldm_220123.lib \
+  /root/MLCAD26-Contest-Scripts-Benchmarks/asap7/lib/NLDM/asap7sc7p5t_SEQ_SLVT_FF_nldm_220123.lib \
+  /root/MLCAD26-Contest-Scripts-Benchmarks/asap7/lib/NLDM/asap7sc7p5t_SIMPLE_LVT_FF_nldm_211120.lib.gz \
+  /root/MLCAD26-Contest-Scripts-Benchmarks/asap7/lib/NLDM/asap7sc7p5t_SIMPLE_RVT_FF_nldm_211120.lib.gz \
+  /root/MLCAD26-Contest-Scripts-Benchmarks/asap7/lib/NLDM/asap7sc7p5t_SIMPLE_SLVT_FF_nldm_211120.lib.gz \
+  /root/MLCAD26-Contest-Scripts-Benchmarks/asap7/lib/NLDM/sram_asap7_16x256_1rw.lib ]
+
+#reading tech lef
+read_lef $tech_lef
+
+# Read all stdcell lefs
+foreach lef $std_lef {
+  puts "READ_LEF: $lef"
+  read_lef $lef
+  }
 
 # Read all libs
 foreach lib $lib_files {
