@@ -1,8 +1,8 @@
 export TOP_PROJ_DIR="/root/MLCAD26-Contest-Scripts-Benchmarks"
 export PROJ_DIR="${TOP_PROJ_DIR}/evaluation"
 
-export DESIGN_NAME="aes_cipher_top"
-export FOLDER_NAME="aes_cipher_top_evaluation"
+export DESIGN_NAME="ariane"
+export FOLDER_NAME="ariane_evaluation"
 
 mkdir -p ${FOLDER_NAME}
 export LOG_FILE="${FOLDER_NAME}/evaluation.log"
