@@ -107,13 +107,12 @@ python3 def_validity_check.py \
     --post_opt </path/to/your/optimized/design/folder/containing/nodes.csv/and/nets.csv>
 ```
 
-#### Optional Arguments
+#### Run Equivalence Check Arguments 
 
 | Argument        | Description                                                                      | Default                                                      |
 | --------------- | -------------------------------------------------------------------------------- | ------------------------------------------------------------ |
 | `--pre_opt`     | Path to benchmark directory containing `node.csv` and `nets.csv`                 | *(required)*                                                 |
 | `--post_opt`    | Path to contest post-optimization directory containing `node.csv` and `nets.csv` | *(required)*                                                 |
-| `--equiv_cells` | Path to equivalent cells CSV file                                                | `./evaluation/validity_check/asap7_equivalent_cell_list.csv` |
 
 ---
 
