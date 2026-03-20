@@ -2,17 +2,15 @@
 """
 Compute MLCAD26 score from:
 - parse_log.py metrics.csv
-- netlist_equiv_check.py displacement (node.csv)
+- def_validity_check.py displacement (node.csv)
 
 Minimal usage:
-  python3 scripts/compute_score.py \
+  python3 evaluation/compute_score.py \
     --design_name aes_cipher_top \
-    --contest_post_dir Benchmarks/aes_cipher_top/post_opt
+    --contest_post_dir benchmarks/aes_cipher_top/
 
 Notes:
-- baseline post dir is auto-mapped to: Benchmarks/<design_name>/post_opt
-- pre_opt is assumed identical for baseline and contestant:
-  Benchmarks/<design_name>/<run_folder>/pre_opt
+- baseline dir is auto-mapped to: benchmarks/<design_name>/
 - weights are hardcoded to 1.0
 """
 
@@ -27,7 +25,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from equiv_check.netlist_equiv_check import (  # noqa: E402
+from validity_check.def_validity_check import (  # noqa: E402
     load_nodes,
     load_equiv_cells,
     calculate_logic_cell_movement,
@@ -164,7 +162,7 @@ def parse_args() -> argparse.Namespace:
     ap.add_argument(
         "--equiv_cells",
         type=Path,
-        default=REPO_ROOT / "equiv_check" / "asap7_equivalent_cell_list.csv",
+        default=REPO_ROOT / "evaluation" / "validity_check" / "asap7_equivalent_cell_list.csv",
         help="Equivalent-cell list CSV",
     )
     return ap.parse_args()
