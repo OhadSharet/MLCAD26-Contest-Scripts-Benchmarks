@@ -97,7 +97,7 @@ read_sdc     <path/to/the/benchmarks/sdc/file> # Read this file from the benchma
 write_node_and_net_files "node.csv" "nets.csv"
 ```
 
-### Step 2 — Run Equivalence Check
+### Step 2 — Run Validity Check
 
 Please note that `nodes.csv` and `nets.csv` files must be in the same folder.
 
@@ -105,14 +105,12 @@ Please note that `nodes.csv` and `nets.csv` files must be in the same folder.
 python3 def_validity_check.py \
     --pre_opt <path/to/benchmark> \
     --post_opt </path/to/your/optimized/design/folder/containing/nodes.csv/and/nets.csv>
-```
+``` 
 
-#### Run Equivalence Check Arguments 
-
-| Argument        | Description                                                                      | Default                                                      |
-| --------------- | -------------------------------------------------------------------------------- | ------------------------------------------------------------ |
-| `--pre_opt`     | Path to benchmark directory containing `node.csv` and `nets.csv`                 | *(required)*                                                 |
-| `--post_opt`    | Path to contest post-optimization directory containing `node.csv` and `nets.csv` | *(required)*                                                 |
+| Argument     | Description                                                                      | Default      |
+| ------------ | -------------------------------------------------------------------------------- | ------------ |
+| `--pre_opt`  | Path to benchmark directory containing `node.csv` and `nets.csv`                 | *(required)* |
+| `--post_opt` | Path to contest post-optimization directory containing `node.csv` and `nets.csv` | *(required)* |
 
 ---
 
