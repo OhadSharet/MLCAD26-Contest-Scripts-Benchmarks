@@ -47,26 +47,20 @@ For each benchmark, point the `$def_file` and `$verilog_netlist` variables in `e
 
 ### Step 2 — Run evaluation
 
+#### Running evaluation through provided script
+
 ```bash
-cd evaluation/{design}
-source eval.sh
+cd MLCAD26-Contest-Scripts-Benchmarks/evaluation/
+source eval.sh <design/to/evaluate>
+
 ```
 
-Or manually:
-
+For example, to run evaluation for [ariane](./ariane/) benchmark, we would use the following commands : 
 ```bash
-export TOP_PROJ_DIR="/path/to/benchmark"
-export PROJ_DIR="${TOP_PROJ_DIR}/evaluation"
-export DESIGN_NAME="<design_name>"
-export FOLDER_NAME="<folder_name>"
 
-mkdir -p ${FOLDER_NAME}
+cd MLCAD26-Contest-Scripts-Benchmarks/evaluation/
+source eval.sh ariane
 
-/root/MLCAD26-Contest-Scripts-Benchmarks/OpenROAD/build/bin/openroad -exit ${PROJ_DIR}/evaluation.tcl \
-  | tee ${FOLDER_NAME}/evaluation.log
-
-python3 ${PROJ_DIR}/parse_log.py ${FOLDER_NAME}/evaluation.log \
-  --csv ${FOLDER_NAME}/metrics.csv
 ```
 
 Outputs written to `evaluation/<design>/<folder_name>/`: `evaluation.log`, `metrics.csv`, `congestion_report.rpt`.
@@ -80,7 +74,7 @@ python3 evaluation/compute_score.py \
     --contest_post_dir </path/to/your/optimized/design/>
 ```
 
-| Opion              | Description                                                       |
+| Option              | Description                                                       |
 | ------------------ | ----------------------------------------------------------------- |
 | --design_name      | Name of the design being tested. E.g. ariane, aes_cipher_top etc. |
 | --contest_post_dir | Path to folder containing optimized DEF,SDC and verilog files     |
