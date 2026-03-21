@@ -87,10 +87,10 @@ net_name,driver_inst pin_name,sink1_inst pin_name,sink2_inst pin_name,...
 source /root/MLCAD26-Contest-Scripts-Benchmarks/evaluation/validity_check/OpenROAD_utils.tcl
 
 # Load the benchmark setup files
-source evaluation/<benchmark>/libsetup.tcl 
+source evaluation/<benchmark>/lib_setup.tcl 
 
 # Load your **Optimized** DEF and verilog netlists
-read_def     <path/to/your/optimized/DEF/file/for/the/specific/benchmakr>
+read_def     <path/to/your/optimized/DEF/file/for/the/specific/benchmark>
 read_verilog <path/to/your/optimized/verilog/netlist/file/for/the/specific/benchmark>
 read_sdc     <path/to/the/benchmarks/sdc/file> # Read this file from the benchmarks/ folder.
  
