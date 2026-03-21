@@ -50,8 +50,6 @@ For each benchmark, point the `$def_file` and `$verilog_netlist` variables in `e
 
 ### Step 2 — Run evaluation
 
-#### Running evaluation through provided script
-
 ```bash
 cd MLCAD26-Contest-Scripts-Benchmarks/evaluation/
 source eval.sh <design/to/evaluate>
