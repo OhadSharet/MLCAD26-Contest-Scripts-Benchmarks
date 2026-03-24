@@ -37,10 +37,10 @@ sudo ./etc/DependencyInstaller.sh -all
 
 To develop solution using a pre-built docker image that has this repo pre-installed along with OpenROAD pre-built, please use the following commands
 
-```bash 
-docker pull tsjafri/mlcad2026:2026-03-21
+```bash
 
-docker run -it --name mlcad2026 --hostname MLCAD2026 tsjafri/mlcad2026:2026-03-21 /bin/bash -c "cd && cd MLCAD26-Contest-Scripts-Benchmarks/ && git pull && exec bash"
+docker pull tsjafri/mlcad2026:2026-03-24
+docker run -it --name mlcad2026 --hostname MLCAD2026 tsjafri/mlcad2026:2026-03-24 /bin/bash -c "cd && cd MLCAD26-Contest-Scripts-Benchmarks/ && git pull && exec bash"
 
 ```
 
