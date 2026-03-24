@@ -54,6 +54,7 @@ The above commands will setup a Ubuntu-24.04 docker container with this repo and
 | jpeg_encoder   | 64424             | -0.15   | -66.5    | 162               | 293000.0        | 0                    | 0                           | 0                      |
 | ariane         | 210455            | -0.9413 | -7568.43 | 17900             | 662000          | 1508                 | 0                           | 0                      |
 | nvdla_p        | 106906            | -0.3001 | -224.94  | 296               | 40000           | 0                    | 0                           | 0                      |
+| nvdla_c        | 312651            | -0.2168 | -76.81   | 17300             | 601000          | 438                  | 0                           | 0                      |
 
 
 ## Questions 

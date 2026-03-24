@@ -8,30 +8,33 @@
 
 ```
 .
-├── evaluation/
-│   ├── compute_score.py
-│   ├── eval.sh
-│   ├── evaluation_baseline.tcl
-│   ├── evaluation.tcl
-│   ├── parse_log.py
-│   ├── README.md
-│   ├── aes_cipher_top/
-│   │   ├── design_setup.tcl
-│   │   └── lib_setup.tcl
-│   ├── jpeg_encoder/
-│   │   ├── design_setup.tcl
-│   │   └── lib_setup.tcl
-│   ├── ariane/
-│   │   ├── design_setup.tcl
-│   │   └── lib_setup.tcl
-│   ├── nvdla_p/
-│   │   ├── design_setup.tcl
-│   │   └── lib_setup.tcl
-│   └── validity_check/
-│       ├── asap7_equivalent_cell_list.csv
-│       ├── def_validity_check.py
-│       ├── OpenROAD_utils.tcl
-│       └── README.md
+└── evaluation/
+   ├── compute_score.py
+   ├── eval.sh
+   ├── evaluation_baseline.tcl
+   ├── evaluation.tcl
+   ├── parse_log.py
+   ├── README.md
+   ├── aes_cipher_top/
+   │   ├── design_setup.tcl
+   │   └── lib_setup.tcl
+   ├── jpeg_encoder/
+   │   ├── design_setup.tcl
+   │   └── lib_setup.tcl
+   ├── ariane/
+   │   ├── design_setup.tcl
+   │   └── lib_setup.tcl
+   ├── nvdla_p/
+   │   ├── design_setup.tcl
+   │   └── lib_setup.tcl
+   ├── nvdla_c/
+   │   ├── design_setup.tcl
+   │   └── lib_setup.tcl
+   └── validity_check/
+       ├── asap7_equivalent_cell_list.csv
+       ├── def_validity_check.py
+       ├── OpenROAD_utils.tcl
+       └── README.md
 
     
 ```

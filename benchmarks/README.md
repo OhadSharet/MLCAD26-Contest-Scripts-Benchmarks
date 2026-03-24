@@ -18,28 +18,30 @@ benchmarks/
 │   ├── aes_cipher_top.def
 │   ├── aes_cipher_top.sdc
 │   ├── node.csv
-│   ├── nets.csv
-│   ├── metrics.csv
+│   └── nets.csv
 ├── jpeg_encoder/
 │   ├── jpeg_encoder.v
 │   ├── jpeg_encoder.def
 │   ├── jpeg_encoder.sdc
 │   ├── node.csv
-│   ├── nets.csv
-│   ├── metrics.csv
+│   └── nets.csv
 ├── ariane/
 │   ├── ariane.v
 │   ├── ariane.def
 │   ├── ariane.sdc
 │   ├── node.csv
-│   ├── nets.csv
-│   ├── metrics.csv
-└── nvdla_p/
-    ├── nvdla_p.v
-    ├── nvdla_p.def
-    ├── nvdla_p.sdc
+│   └── nets.csv
+├── nvdla_p/
+│   ├── nvdla_p.v
+│   ├── nvdla_p.def
+│   ├── nvdla_p.sdc
+│   ├── node.csv
+│   └── nets.csv
+└── nvdla_c/
+    ├── nvdla_c.v
+    ├── nvdla_c.def
+    ├── nvdla_c.sdc
     ├── node.csv
-    ├── nets.csv
-    └── metrics.csv
+    └── nets.csv
 
 ```
