@@ -57,7 +57,7 @@ The above commands will setup a Ubuntu-24.04 docker container with this repo and
 | nvdla_c        | 650       | 312696            | -0.202  | -55.58   | 17300             | 601000          | 437                  | 0                           | 0                      |
 
 
-## Reproducing baseline metrics and computing scroe 
+## Reproducing baseline metrics and computing score 
 - `eval.sh`       -  Script to run the evaluation flow for contestant-optimized designs. This script will run the evaluation flow and generate the output files in `evaluation/<design_name>` folder.
 - `evaluation.tcl` - Evaluation flow script that will be sourced by eval.sh
 - `evaluation_baseline.tcl`- script to reproduce the baseline metrics. Replace the `evaluation.tcl` with `evaluation_baseline.tcl` in `eval.sh` to reproduce the baseline metrics. This script uses OpenROAD's built-in resizer and placer(repair_timing) for optimization.
