@@ -48,13 +48,13 @@ The above commands will setup a Ubuntu-24.04 docker container with this repo and
 
 ## Benchmark Statistics
 
-| Design Name    | Num. of instances | WNS(ns) | TNS(ns)  | Leakage power(uW) | Total power(uW) | Slew violation count | Capacitance violation count | Fanout violation count |
-| -------------- | ----------------- | ------- | -------- | ----------------- | --------------- | -------------------- | --------------------------- | ---------------------- |
-| aes_cipher_top | 20097             | -0.0853 | -12.44   | 96.30             | 432000.0        | 0                    | 0                           | 0                      |
-| jpeg_encoder   | 64602             | -0.0908 | -48.77   | 174               | 294000.0        | 0                    | 0                           | 0                      |
-| ariane         | 210455            | -0.9413 | -7568.43 | 17900             | 658000          | 1508                 | 0                           | 0                      |
-| nvdla_p        | 106994            | -0.2973 | -198.18  | 306               | 40000           | 0                    | 0                           | 0                      |
-| nvdla_c        | 312696            | -0.202  | -55.58   | 17300             | 601000          | 437                  | 0                           | 0                      |
+| Design Name    | Clock(ps) | Num. of instances | WNS(ns) | TNS(ns)  | Leakage power(uW) | Total power(uW) | Slew violation count | Capacitance violation count | Fanout violation count |
+| -------------- | --------- | ----------------- | ------- | -------- | ----------------- | --------------- | -------------------- | --------------------------- | ---------------------- |
+| aes_cipher_top | 200       | 20097             | -0.0853 | -12.44   | 96.30             | 432000.0        | 0                    | 0                           | 0                      |
+| jpeg_encoder   | 350       | 64602             | -0.0908 | -48.77   | 174               | 294000.0        | 0                    | 0                           | 0                      |
+| ariane         | 900       | 210455            | -0.9413 | -7568.43 | 17900             | 658000          | 1508                 | 0                           | 0                      |
+| nvdla_p        | 400       | 106994            | -0.2973 | -198.18  | 306               | 40000           | 0                    | 0                           | 0                      |
+| nvdla_c        | 650       | 312696            | -0.202  | -55.58   | 17300             | 601000          | 437                  | 0                           | 0                      |
 
 
 ## Reproducing baseline metrics and computing scroe 
