@@ -20,6 +20,7 @@ Metrics extracted (when present):
 - flow_runtime (seconds)
 """
 
+import os
 import re
 import csv
 import sys
@@ -424,6 +425,9 @@ def main():
         sys.exit(1)
 
     metrics = parse_log(log_path)
+    design_env = os.environ.get("DESIGN_NAME")
+    if design_env:
+        metrics["design"] = design_env
     print_metrics(metrics)
 
     if args.csv:
