@@ -46,7 +46,7 @@ docker run -it --name mlcad2026 --hostname MLCAD2026 tsjafri/mlcad2026:2026-03-2
 
 The above commands will setup a Ubuntu-24.04 docker container with this repo and OpenROAD pre-installed and pre-built. 
 
-## Benchmark Statistics
+## Baseline Statistics
 
 | Design Name    | Clock(ps) | Num. of instances | WNS(ns) | TNS(ns)  | Leakage power(uW) | Total power(uW) | Slew violation count | Capacitance violation count | Fanout violation count |
 | -------------- | --------- | ----------------- | ------- | -------- | ----------------- | --------------- | -------------------- | --------------------------- | ---------------------- |
