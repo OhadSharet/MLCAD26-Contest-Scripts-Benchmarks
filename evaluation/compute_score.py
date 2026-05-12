@@ -23,6 +23,19 @@ from validity_check.def_validity_check import (  # noqa: E402
     calculate_logic_cell_movement,
 )
 
+# ─── Score weights ───────────────────────────────────────────────────────────
+W_TNS            = 15.0
+W_DPOWER         = 60.0
+W_LPOWER         = 50.0
+W_SLEW           = 0.001
+W_CAP            = 10.0
+W_FANOUT         = 1.0
+W_TOOL_RUNTIME   = 0.5
+W_FLOW_RUNTIME   = 1.0
+W_DIS            = 0.5
+W_MAX_OVERFLOW   = 1.0
+W_TOTAL_OVERFLOW = 1.0
+
 FLOAT_KEYS = {
     "wns", "tns",
     "slew_over_sum", "cap_over_sum", "fanout_over_sum",
@@ -120,6 +133,7 @@ def calc_avg_displacement(pre_dir: Path, post_dir: Path, equiv_cells: Path) -> f
     pre_nodes = load_nodes(pre_node.as_posix())
     post_nodes = load_nodes(post_node.as_posix())
     equiv_groups = load_equiv_cells(equiv_cells.as_posix())
+    #equiv_groups, _, _ = load_equiv_cells(equiv_cells.as_posix())
     avg_move, _count, _moved, _max = calculate_logic_cell_movement(
         pre_nodes, post_nodes, equiv_groups
     )
@@ -215,25 +229,35 @@ def main() -> int:
     tns_norm = safe_norm_delta(cur.get("tns"), base.get("tns"), denom_abs=True)
     dpower_norm = norm_improve_lower(cur_dyn, base_dyn)
     lpower_norm = norm_improve_lower(cur.get("leakage_power"), base.get("leakage_power"))
-    sppa = tns_norm + dpower_norm + lpower_norm
+    #sppa = tns_norm + dpower_norm + lpower_norm
+    sppa = (W_TNS    * tns_norm
+          + W_DPOWER * dpower_norm
+          + W_LPOWER * lpower_norm)
 
     slew_norm = safe_norm_delta(cur.get("slew_over_sum"), base.get("slew_over_sum"))
     cap_norm = safe_norm_delta(cur.get("cap_over_sum"), base.get("cap_over_sum"))
     fanout_norm = safe_norm_delta(cur.get("fanout_over_sum"), base.get("fanout_over_sum"))
-    perc = slew_norm + cap_norm + fanout_norm
+    #perc = slew_norm + cap_norm + fanout_norm
+    perc = (W_SLEW   * slew_norm
+          + W_CAP    * cap_norm
+          + W_FANOUT * fanout_norm)
 
     rtool = safe_norm_delta(cur.get("tool_runtime"), base.get("tool_runtime"))
     rflow = safe_norm_delta(cur.get("flow_runtime"), base.get("flow_runtime"))
-    r = rtool + rflow
+    #r = rtool + rflow
+    r = (W_TOOL_RUNTIME * rtool
+       + W_FLOW_RUNTIME * rflow)
 
     #pdis = safe_norm_delta(cur_dis, base_dis)
 
     # Thresholds fixed to 0.0
     pmax = overflow_penalty(cur.get("max_gr_overflow"), 0.0)
     ptotal = overflow_penalty(cur.get("total_gr_overflow"), 0.0)
-    poverflow = pmax + ptotal
+    #poverflow = pmax + ptotal
+    poverflow = (W_MAX_OVERFLOW   * pmax
+              +  W_TOTAL_OVERFLOW * ptotal)
 
-    sfinal = sppa - perc - r - cur_dis - poverflow
+    sfinal = sppa - perc - r - (W_DIS * cur_dis) - poverflow
     #sfinal = sppa - perc - r - pdis - poverflow
 
     print("===== INPUT PATHS =====")
