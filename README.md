@@ -24,7 +24,7 @@ Please use the copy of OpenROAD provided in this directory. We will use this sam
 
 
 ```
-# Clone the repo (LFS files are fetched automatically during checkout)
+# Clone the repo 
 git clone https://github.com/ASU-VDA-Lab/MLCAD26-Contest-Scripts-Benchmarks.git
 cd MLCAD26-Contest-Scripts-Benchmarks
 git submodule update --init --recursive
