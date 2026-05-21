@@ -22,10 +22,18 @@ Prior timing-optimization contests have largely relied on fixed heuristics appli
 
 Please use the copy of OpenROAD provided in this directory. We will use this same copy of OpenROAD to evaluate participant's solutions. We have slightly changed the source code in this version of OpenROAD to check for logic equivalence, and participants are recommened to use this copy of OpenROAD to avoid any inconsistencies in their own evaluation. 
 
+> **Note:** Some benchmark files (`mempool_group.def`, `mempool_group.v`, `nets.csv`) are stored using [Git LFS](https://git-lfs.com). You must install `git-lfs` and run `git lfs install` **before** cloning, otherwise these files will appear as small text pointer stubs instead of the real content.
+
 
 ```
+# Install Git LFS (one-time setup per machine)
+sudo apt-get update && sudo apt-get install -y git-lfs
+git lfs install
+
+# Clone the repo (LFS files are fetched automatically during checkout)
 git clone https://github.com/ASU-VDA-Lab/MLCAD26-Contest-Scripts-Benchmarks.git
 cd MLCAD26-Contest-Scripts-Benchmarks
+git lfs pull                       # safety net: ensure all LFS files are materialized
 git submodule update --init --recursive
 cd OpenROAD 
 git checkout MLCAD26
@@ -40,7 +48,7 @@ To develop solution using a pre-built docker image that has this repo pre-instal
 ```bash
 
 docker pull tsjafri/mlcad2026:2026-03-24
-docker run -it --name mlcad2026 --hostname MLCAD2026 tsjafri/mlcad2026:2026-03-24 /bin/bash -c "cd && cd MLCAD26-Contest-Scripts-Benchmarks/ && git pull && exec bash"
+docker run -it --name mlcad2026 --hostname MLCAD2026 tsjafri/mlcad2026:2026-03-24 /bin/bash -c "apt-get update && apt-get install -y git-lfs && git lfs install && cd && cd MLCAD26-Contest-Scripts-Benchmarks/ && git pull && git lfs pull && exec bash"
 
 ```
 
@@ -55,6 +63,8 @@ The above commands will setup a Ubuntu-24.04 docker container with this repo and
 | ariane         | 900       | 210455            | -0.9413 | -7568.43 | 17900             | 658000          | 1508                 | 0                           | 0                      |
 | nvdla_p        | 400       | 106994            | -0.2973 | -198.18  | 306               | 40000           | 0                    | 0                           | 0                      |
 | nvdla_c        | 650       | 312696            | -0.202  | -55.58   | 17300             | 601000          | 437                  | 0                           | 0                      |
+| nvdla_a        | 200       | 75686             | -0.1864 | -203.23  | 321               | 165000          | 0                    | 0                           | 0                      |
+| mempool_group  | 1500      | 205063            | -0.5996 | -3680.33 | 3070              | 279000          | 818                  | 0                           | 0                      |
 
 
 ## Reproducing baseline metrics and computing score 
