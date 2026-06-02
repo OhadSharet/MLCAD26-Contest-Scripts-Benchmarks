@@ -58,6 +58,7 @@ The above commands will setup a Ubuntu-24.04 docker container with this repo and
 | nvdla_c        | 650       | 312696            | -0.202  | -55.58   | 17300             | 601000          | 437                  | 0                           | 0                      |
 | nvdla_a        | 200       | 75686             | -0.1864 | -203.23  | 321               | 165000          | 0                    | 0                           | 0                      |
 | mempool_group  | 1500      | 205063            | -0.5996 | -3680.33 | 3070              | 279000          | 818                  | 0                           | 0                      |
+| nvdla_m        | 400       | 20346             | -0.2923 | -13.99   | 61.5              | 44600           | 0                    | 0                           | 0                      |
 
 
 ## Reproducing baseline metrics and computing score 
