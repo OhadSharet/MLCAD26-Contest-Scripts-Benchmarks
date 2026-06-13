@@ -8,11 +8,12 @@ Validates legality for cell movements between pre-optimization and post-optimiza
 
 ## Overview
 
-After running placement or logic optimizations, this tool verifies that the optimized netlist preserves the validity constraints given for the contest. It checks three key properties:
+After running placement or logic optimizations, this tool verifies that the optimized netlist preserves the validity constraints given for the contest. It checks four key properties:
 
 1. **Physical Cell Location Immutability** — Cells not in the equivalent cell list must not move
 2. **Macro Location Immutability** — Macro locations must remain unchanged
 3. **I/O Port Location Check** — I/O port locations must remain unchanged
+4. **Flip-Flop Integrity** — Flip-flops must be preserved (count, D/Q nets, VT type, and clock connectivity)
 
 ---
 
@@ -23,6 +24,7 @@ After running placement or logic optimizations, this tool verifies that the opti
 ├── validity_check/
 │   ├── asap7_equivalent_cell_list.csv
 │   ├── def_validity_check.py
+│   ├── flipflop_check.py
 │   ├── OpenROAD_utils.tcl
 │   └── README.md
 
@@ -36,6 +38,7 @@ After running placement or logic optimizations, this tool verifies that the opti
 - OpenROAD (for exporting post-opt data via `OpenROAD_utils.tcl`)
 - Pre-extracted benchmark data under `./benchmarks/`
 - ASAP7 equivalent cell list at `./evaluation/validity_check/asap7_equivalent_cell_list.csv`
+- A Verilog netlist (`*.v`) in each of the `--pre_opt` / `--post_opt` directories (used by Check 4)
 
 ---
 
@@ -139,8 +142,17 @@ Check 3: I/O Locations...
 === CHECK 3: I/O Locations ===
 PASS: 0 violations
 
+Check 4: Flip-Flop Integrity...
+  FFs in pre_opt netlist   : 20330
+  FFs in post_opt netlist  : 20330
+  Matched by instance name : 20330
+  Matched with same VT type: 20330
+  Sub-test failures: T1(count)=0  T2(D/Q nets)=0  T3(VT type)=0  T4(clock)=0
+=== Check 4: Flip-Flop Integrity ===
+PASS: 0 violations
+
 ==================================================
-SUMMARY: 3/3 checks passed
+SUMMARY: 4/4 checks passed
 RESULT: VALID
 ```
 
@@ -160,13 +172,33 @@ All macro instances (hard blocks) must remain at their original locations.
 
 All I/O ports must remain at their original positions.
 
+### Check 4: Flip-Flop Integrity
+
+Verifies that flip-flops are preserved between the pre-opt and post-opt Verilog
+netlists. The full implementation lives in `flipflop_check.py` (which can also be
+run standalone on two `.v` files); `def_validity_check.py` imports it and runs it
+as a single combined check made of four sub-tests:
+
+| Sub-test | Property checked |
+| -------- | ---------------------------------------------------------------------------- |
+| **T1 — Count**     | Same number of DFF instances in both netlists (reports any DFF present in only one). |
+| **T2 — D/Q nets**  | Each matched DFF drives/receives the same `D` and `Q`/`QN` net names. |
+| **T3 — VT type**   | Each matched DFF keeps the same cell master (full name, e.g. `..._SL` vs `..._L`), so any Vt-flavor or drive-strength change is flagged. |
+| **T4 — Clock**     | Each matched DFF's `.CLK` net and its immediate driver (input port or driving cell) are unchanged. |
+
+Instances are matched by name, so sub-tests T2–T4 only compare flip-flops present
+in both netlists. The check needs the `.v` netlist in each of the `--pre_opt` /
+`--post_opt` directories. The `Sub-test failures:` line prints the per-test
+violation counts so each sub-test's status is visible even when the listed
+violations are truncated.
+
 ---
 
 ## Return Codes
 
 | Code | Meaning                                                |
 | ---- | ------------------------------------------------------ |
-| `0`  | Netlists are **VALID** — all 3 checks passed           |
+| `0`  | Netlists are **VALID** — all 4 checks passed           |
 | `1`  | Netlists are **NOT VALID** — one or more checks failed |
 
 

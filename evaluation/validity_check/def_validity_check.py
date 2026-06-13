@@ -8,12 +8,16 @@ Checks: physical/macro/IO locations.
 
 import argparse
 import csv
+import glob
 import os
 import sys
 import time
 from collections import defaultdict, deque
 from dataclasses import dataclass
 from typing import Dict, Set, Tuple, List
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from flipflop_check import parse_dffs, parse_net_drivers
 
 # Default paths and seeds
 DEFAULT_EQUIV_CELLS = (
@@ -182,6 +186,89 @@ def print_result(name, passed, violations, max_show=10):
         print(f"  ... and {len(violations) - max_show} more")
 
 
+def check_ff_integrity(pre_dir: str, post_dir: str):
+    """Flip-flop legality check between pre-opt and post-opt netlists.
+
+    Runs four sub-tests as a single check (mirrors flipflop_check.py):
+      1. DFF count matches.
+      2. D and Q net names preserved per matched instance.
+      3. VT type (full cell name) preserved per matched instance.
+      4. Clock net name and its immediate driver preserved per matched instance.
+    """
+    pre_v = glob.glob(os.path.join(pre_dir, "*.v"))
+    post_v = glob.glob(os.path.join(post_dir, "*.v"))
+
+    if not pre_v:
+        return False, [f"No .v netlist found in pre_opt dir: {pre_dir}"], {}
+    if not post_v:
+        return False, [f"No .v netlist found in post_opt dir: {post_dir}"], {}
+
+    dffs1 = parse_dffs(pre_v[0])
+    dffs2 = parse_dffs(post_v[0])
+    drivers1, _ = parse_net_drivers(pre_v[0])
+    drivers2, _ = parse_net_drivers(post_v[0])
+
+    common = set(dffs1) & set(dffs2)
+    violations = []
+    # Per-test failure counts so each sub-test's status is visible even when the
+    # printed violation list is truncated.
+    fails = {"t1_count": 0, "t2_dq": 0, "t3_vt": 0, "t4_clk": 0}
+
+    # Test 1: DFF count
+    if len(dffs1) != len(dffs2):
+        fails["t1_count"] += 1
+        violations.append(
+            f"DFF count mismatch: pre={len(dffs1)} vs post={len(dffs2)}"
+        )
+    for inst in sorted(set(dffs1) - set(dffs2)):
+        fails["t1_count"] += 1
+        violations.append(f"DFF only in pre_opt: {inst}")
+    for inst in sorted(set(dffs2) - set(dffs1)):
+        fails["t1_count"] += 1
+        violations.append(f"DFF only in post_opt: {inst}")
+
+    def driver_str(net, drivers):
+        d = drivers.get(net, ("<unknown>", "", "")) if net else ("<no CLK pin>", "", "")
+        return "input port" if d[0] == "input_port" else f"{d[0]} {d[1]}"
+
+    vt_matched = 0
+    for inst in sorted(common):
+        f1, f2 = dffs1[inst], dffs2[inst]
+
+        # Test 2: D and Q net names
+        if f1["D"] != f2["D"]:
+            fails["t2_dq"] += 1
+            violations.append(f"D net mismatch on {inst}: pre={f1['D']}, post={f2['D']}")
+        if f1["Q"] != f2["Q"]:
+            fails["t2_dq"] += 1
+            violations.append(f"Q net mismatch on {inst}: pre={f1['Q']}, post={f2['Q']}")
+
+        # Test 3: VT type (full cell name)
+        if f1["cell"] != f2["cell"]:
+            fails["t3_vt"] += 1
+            violations.append(f"VT type mismatch on {inst}: pre={f1['cell']}, post={f2['cell']}")
+        else:
+            vt_matched += 1
+
+        # Test 4: clock net + immediate driver
+        clk1, clk2 = f1["CLK"], f2["CLK"]
+        drv1, drv2 = driver_str(clk1, drivers1), driver_str(clk2, drivers2)
+        if clk1 != clk2 or drv1 != drv2:
+            fails["t4_clk"] += 1
+            violations.append(
+                f"Clock mismatch on {inst}: pre={clk1} ({drv1}), post={clk2} ({drv2})"
+            )
+
+    stats = {
+        "pre_total": len(dffs1),
+        "post_total": len(dffs2),
+        "matched_instances": len(common),
+        "vt_matched": vt_matched,
+        **fails,
+    }
+    return len(violations) == 0, violations, stats
+
+
 def main():
     t_start = time.time()
     args = parse_args()
@@ -248,6 +335,24 @@ def main():
     passed, violations = check_locations(pre_nodes, post_nodes, "IO")
     results.append(("Check 3: I/O", passed, violations))
     print_result("Check 3: I/O", passed, violations)
+    print(f"  Time: {time.time() - t0:.2f}s")
+
+    # Check 4: Flip-flop integrity (count, D/Q nets, VT type, clock net+driver)
+    print("\nCheck 4: Flip-Flop Integrity...")
+    t0 = time.time()
+    passed, violations, ff_stats = check_ff_integrity(args.pre_opt, args.post_opt)
+    results.append(("Check 4: Flip-Flop Integrity", passed, violations))
+    if ff_stats:
+        print(f"  FFs in pre_opt netlist   : {ff_stats['pre_total']}")
+        print(f"  FFs in post_opt netlist  : {ff_stats['post_total']}")
+        print(f"  Matched by instance name : {ff_stats['matched_instances']}")
+        print(f"  Matched with same VT type: {ff_stats['vt_matched']}")
+        print(f"  Sub-test failures: "
+              f"T1(count)={ff_stats.get('t1_count', 0)}  "
+              f"T2(D/Q nets)={ff_stats.get('t2_dq', 0)}  "
+              f"T3(VT type)={ff_stats.get('t3_vt', 0)}  "
+              f"T4(clock)={ff_stats.get('t4_clk', 0)}")
+    print_result("Check 4: Flip-Flop Integrity", passed, violations)
     print(f"  Time: {time.time() - t0:.2f}s")
 
     # Summary
