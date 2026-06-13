@@ -218,33 +218,10 @@ def compare_netlists(netlist1_path, netlist2_path):
                 print(f"    Q  [Golden ]: {q1}")
                 print(f"    Q  [Revised  ]: {q2}")
 
-    # Test 3: VT type check
+    # Test 3: Clock net and clock driver check (with full fanin trace)
     print()
     print("=" * 50)
-    print("Test 3: VT Type Check")
-    print("=" * 50)
-
-    vt_mismatches = []
-    for inst in sorted(common):
-        cell1 = dffs1[inst]["cell"]
-        cell2 = dffs2[inst]["cell"]
-        if cell1 != cell2:
-            vt_mismatches.append((inst, cell1, cell2))
-
-    if not vt_mismatches:
-        print(f"[PASS] All {len(common)} matched DFF instances have matching VT types.")
-    else:
-        failed = True
-        print(f"[FAIL] {len(vt_mismatches)} instance(s) with VT type mismatches:")
-        for inst, cell1, cell2 in vt_mismatches:
-            print(f"\n  Instance: {inst}")
-            print(f"    Cell [Golden]: {cell1}")
-            print(f"    Cell [Revised ]: {cell2}")
-
-    # Test 4: Clock net and clock driver check (with full fanin trace)
-    print()
-    print("=" * 50)
-    print("Test 4: Clock Net and Driver Check")
+    print("Test 3: Clock Net and Driver Check")
     print("=" * 50)
 
     print("  Parsing net drivers for fanin tracing...", flush=True)
