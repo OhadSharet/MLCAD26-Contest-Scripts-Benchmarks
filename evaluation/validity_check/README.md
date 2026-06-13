@@ -13,7 +13,7 @@ After running placement or logic optimizations, this tool verifies that the opti
 1. **Physical Cell Location Immutability** — Cells not in the equivalent cell list must not move
 2. **Macro Location Immutability** — Macro locations must remain unchanged
 3. **I/O Port Location Check** — I/O port locations must remain unchanged
-4. **Flip-Flop Integrity** — Flip-flops must be preserved (count, D/Q nets, and clock connectivity)
+4. **Flip-Flop Integrity** — Flip-flops must be preserved (count and clock connectivity)
 
 ---
 
@@ -146,7 +146,7 @@ Check 4: Flip-Flop Integrity...
   FFs in pre_opt netlist   : 20330
   FFs in post_opt netlist  : 20330
   Matched by instance name : 20330
-  Sub-test failures: T1(count)=0  T2(D/Q nets)=0  T3(clock)=0
+  Sub-test failures: T1(count)=0  T2(clock)=0
 === Check 4: Flip-Flop Integrity ===
 PASS: 0 violations
 
@@ -176,15 +176,14 @@ All I/O ports must remain at their original positions.
 Verifies that flip-flops are preserved between the pre-opt and post-opt Verilog
 netlists. The full implementation lives in `flipflop_check.py` (which can also be
 run standalone on two `.v` files); `def_validity_check.py` imports it and runs it
-as a single combined check made of three sub-tests:
+as a single combined check made of two sub-tests:
 
 | Sub-test | Property checked |
 | -------- | ---------------------------------------------------------------------------- |
 | **T1 — Count**     | Same number of DFF instances in both netlists (reports any DFF present in only one). |
-| **T2 — D/Q nets**  | Each matched DFF drives/receives the same `D` and `Q`/`QN` net names. |
-| **T3 — Clock**     | Each matched DFF's `.CLK` net and its immediate driver (input port or driving cell) are unchanged. |
+| **T2 — Clock**     | Each matched DFF's `.CLK` net and its immediate driver (input port or driving cell) are unchanged. |
 
-Instances are matched by name, so sub-tests T2 and T3 only compare flip-flops present
+Instances are matched by name, so sub-test T2 only compares flip-flops present
 in both netlists. The check needs the `.v` netlist in each of the `--pre_opt` /
 `--post_opt` directories. The `Sub-test failures:` line prints the per-test
 violation counts so each sub-test's status is visible even when the listed

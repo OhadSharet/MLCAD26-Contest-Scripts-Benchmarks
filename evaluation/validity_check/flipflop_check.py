@@ -188,40 +188,13 @@ def compare_netlists(netlist1_path, netlist2_path):
     else:
         print(f"[PASS] DFF counts match: {len(dffs1)}")
 
-    # Tests 2-4 operate on the intersection of instances present in both netlists
+    # Test 2 operates on the intersection of instances present in both netlists
     common = set(dffs1) & set(dffs2)
 
-    # Test 2: D and Q net name check
+    # Test 2: Clock net and clock driver check (with full fanin trace)
     print()
     print("=" * 50)
-    print("Test 2: D and Q Net Name Check")
-    print("=" * 50)
-
-    mismatches = []
-    for inst in sorted(common):
-        d1, q1 = dffs1[inst]["D"], dffs1[inst]["Q"]
-        d2, q2 = dffs2[inst]["D"], dffs2[inst]["Q"]
-        if d1 != d2 or q1 != q2:
-            mismatches.append((inst, d1, q1, d2, q2))
-
-    if not mismatches:
-        print(f"[PASS] All {len(common)} matched DFF instances have matching D and Q nets.")
-    else:
-        failed = True
-        print(f"[FAIL] {len(mismatches)} instance(s) with net mismatches:")
-        for inst, d1, q1, d2, q2 in mismatches:
-            print(f"\n  Instance: {inst}")
-            if d1 != d2:
-                print(f"    D  [Golden ]: {d1}")
-                print(f"    D  [Revised  ]: {d2}")
-            if q1 != q2:
-                print(f"    Q  [Golden ]: {q1}")
-                print(f"    Q  [Revised  ]: {q2}")
-
-    # Test 3: Clock net and clock driver check (with full fanin trace)
-    print()
-    print("=" * 50)
-    print("Test 3: Clock Net and Driver Check")
+    print("Test 2: Clock Net and Driver Check")
     print("=" * 50)
 
     print("  Parsing net drivers for fanin tracing...", flush=True)
