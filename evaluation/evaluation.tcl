@@ -1,16 +1,91 @@
 # ================== environment & setup ==================
-set top_proj_dir    "$::env(TOP_PROJ_DIR)"
-set proj_dir        "$::env(PROJ_DIR)"
-set design_name     "$::env(DESIGN_NAME)"
-set crfile          "$::env(CONGESTION_REPORT)"
-set folder          "$::env(FOLDER_NAME)"
+set script_dir [file dirname [file normalize [info script]]]
+set default_top_proj_dir [file dirname $script_dir]
 
-set lib_setup_file    "${design_name}/lib_setup.tcl"
-set design_setup_file "${design_name}/design_setup.tcl"
+if {[info exists ::env(TOP_PROJ_DIR)] && $::env(TOP_PROJ_DIR) ne ""} {
+  set top_proj_dir $::env(TOP_PROJ_DIR)
+} else {
+  set top_proj_dir $default_top_proj_dir
+}
+
+if {[info exists ::env(PROJ_DIR)] && $::env(PROJ_DIR) ne ""} {
+  set proj_dir $::env(PROJ_DIR)
+} else {
+  set proj_dir $script_dir
+}
+
+set design_name $::env(DESIGN_NAME)
+if {[info exists ::env(CONGESTION_REPORT)] && $::env(CONGESTION_REPORT) ne ""} {
+  set crfile $::env(CONGESTION_REPORT)
+} else {
+  set crfile [file join $proj_dir ${design_name}_congestion_report.rpt]
+}
+
+if {[info exists ::env(FOLDER_NAME)] && $::env(FOLDER_NAME) ne ""} {
+  set folder $::env(FOLDER_NAME)
+} else {
+  set folder [file join $proj_dir results ${design_name}_evaluation]
+}
+
+set lib_setup_file [file join $script_dir $design_name lib_setup.tcl]
+set design_setup_file [file join $script_dir $design_name design_setup.tcl]
 
 set start [clock seconds]
 source $lib_setup_file
 source $design_setup_file
+
+proc json_escape {value} {
+  set escaped [string map [list \\ \\\\ \" \\\" ] $value]
+  set newline "\n"
+  set carriage "\r"
+  set tab "\t"
+  regsub -all $newline $escaped {\\n} escaped
+  regsub -all $carriage $escaped {\\r} escaped
+  regsub -all $tab $escaped {\\t} escaped
+  return $escaped
+}
+
+proc write_run_archive {} {
+  global folder top_proj_dir design_name def_file verilog_netlist sdc_file
+  global lib_setup_file design_setup_file
+
+  if {[info exists ::env(RUN_TIMESTAMP_UTC)] && $::env(RUN_TIMESTAMP_UTC) ne ""} {
+    set run_timestamp_utc $::env(RUN_TIMESTAMP_UTC)
+  } else {
+    set run_timestamp_utc [clock format [clock seconds] -gmt 1 -format {%Y-%m-%dT%H:%M:%SZ}]
+  }
+
+  if {[info exists ::env(RUN_GIT_COMMIT)] && $::env(RUN_GIT_COMMIT) ne ""} {
+    set run_git_commit $::env(RUN_GIT_COMMIT)
+  } else {
+    set run_git_commit "unknown"
+  }
+
+  file mkdir $folder
+  set inputs_dir [file join $folder inputs]
+  file mkdir $inputs_dir
+
+  foreach source_path [list $def_file $verilog_netlist $sdc_file $lib_setup_file $design_setup_file] {
+    file copy -force $source_path $inputs_dir
+  }
+
+  set manifest_path [file join $folder run_manifest.json]
+  set fp [open $manifest_path w]
+  puts $fp "{"
+  puts $fp [format {  "design_name": "%s",} [json_escape $design_name]]
+  puts $fp [format {  "run_timestamp_utc": "%s",} [json_escape $run_timestamp_utc]]
+  puts $fp [format {  "git_commit": "%s",} [json_escape $run_git_commit]]
+  puts $fp [format {  "top_proj_dir": "%s",} [json_escape $top_proj_dir]]
+  puts $fp [format {  "design_setup_file": "%s",} [json_escape $design_setup_file]]
+  puts $fp [format {  "lib_setup_file": "%s",} [json_escape $lib_setup_file]]
+  puts $fp [format {  "def_file": "%s",} [json_escape $def_file]]
+  puts $fp [format {  "verilog_netlist": "%s",} [json_escape $verilog_netlist]]
+  puts $fp [format {  "sdc_file": "%s"} [json_escape $sdc_file]]
+  puts $fp "}"
+  close $fp
+}
+
+write_run_archive
 
 # ================== helpers ==================
 

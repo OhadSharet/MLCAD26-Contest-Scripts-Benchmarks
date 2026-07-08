@@ -1,14 +1,36 @@
 # Use OR repair_timing to perform buffering&sizing
 
 # ================== environment & setup ==================
-set top_proj_dir    "$::env(TOP_PROJ_DIR)"
-set proj_dir        "$::env(PROJ_DIR)"
-set design_name     "$::env(DESIGN_NAME)"
-set crfile          "$::env(CONGESTION_REPORT)"
-set folder          "$::env(FOLDER_NAME)"
+set script_dir [file dirname [file normalize [info script]]]
+set default_top_proj_dir [file dirname $script_dir]
 
-set lib_setup_file    "${design_name}/lib_setup.tcl"
-set design_setup_file "${design_name}/design_setup.tcl"
+if {[info exists ::env(TOP_PROJ_DIR)] && $::env(TOP_PROJ_DIR) ne ""} {
+  set top_proj_dir $::env(TOP_PROJ_DIR)
+} else {
+  set top_proj_dir $default_top_proj_dir
+}
+
+if {[info exists ::env(PROJ_DIR)] && $::env(PROJ_DIR) ne ""} {
+  set proj_dir $::env(PROJ_DIR)
+} else {
+  set proj_dir $script_dir
+}
+
+set design_name $::env(DESIGN_NAME)
+if {[info exists ::env(CONGESTION_REPORT)] && $::env(CONGESTION_REPORT) ne ""} {
+  set crfile $::env(CONGESTION_REPORT)
+} else {
+  set crfile [file join $proj_dir ${design_name}_congestion_report.rpt]
+}
+
+if {[info exists ::env(FOLDER_NAME)] && $::env(FOLDER_NAME) ne ""} {
+  set folder $::env(FOLDER_NAME)
+} else {
+  set folder [file join $proj_dir results ${design_name}_evaluation]
+}
+
+set lib_setup_file [file join $script_dir $design_name lib_setup.tcl]
+set design_setup_file [file join $script_dir $design_name design_setup.tcl]
 
 set start [clock seconds]
 source $lib_setup_file
