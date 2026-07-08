@@ -16,4 +16,4 @@ export RUN_GIT_COMMIT="$(git -C "${TOP_PROJ_DIR}" rev-parse --short HEAD 2>/dev/
 "${TOP_PROJ_DIR}/OpenROAD/build/bin/openroad" -exit "${PROJ_DIR}/evaluation.tcl" | tee "${LOG_FILE}"
 
 # output metrics to csv
-python3 "${PROJ_DIR}/parse_log.py" "${LOG_FILE}" --csv "${METRICS_CSV}" 
+python3 "${PROJ_DIR}/parse_log.py" "${LOG_FILE}" --csv "${METRICS_CSV}"
