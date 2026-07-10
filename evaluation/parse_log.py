@@ -6,6 +6,7 @@ Parse OpenROAD log to extract evaluation metrics.
 python3 parse_log.py evaluation.log --csv metrics.csv
 
 Metrics extracted (when present):
+- RUN_TIMESTAMP
 - design
 - placement_legal (0/1)
 - total_insts
@@ -372,6 +373,7 @@ def print_metrics(m: Dict[str, Any]) -> None:
 
 def append_csv(csv_path: Path, m: Dict[str, Any]) -> None:
     header = [
+        "RUN_TIMESTAMP",
         "design","placement_legal","total_insts",
         "wns","tns","time_unit",
         "slew_over_sum","slew_over_count",
@@ -384,6 +386,7 @@ def append_csv(csv_path: Path, m: Dict[str, Any]) -> None:
         "flow_runtime",
     ]
     row = [
+        m.get("RUN_TIMESTAMP"),
         m.get("design"),
         m.get("placement_legal"),
         m.get("total_insts"),
@@ -426,8 +429,11 @@ def main():
 
     metrics = parse_log(log_path)
     design_env = os.environ.get("DESIGN_NAME")
+    run_ts_env = os.environ.get("RUN_TIMESTAMP")
     if design_env:
         metrics["design"] = design_env
+    if run_ts_env:
+        metrics["RUN_TIMESTAMP"] = run_ts_env
     print_metrics(metrics)
 
     if args.csv:

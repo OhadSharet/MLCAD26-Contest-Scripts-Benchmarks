@@ -1,3 +1,5 @@
+# Use OR repair_timing to perform buffering&sizing
+
 # ================== environment & setup ==================
 set script_dir [file dirname [file normalize [info script]]]
 set default_top_proj_dir [file dirname $script_dir]
@@ -34,59 +36,6 @@ set start [clock seconds]
 source $lib_setup_file
 source $design_setup_file
 
-proc json_escape {value} {
-  set escaped [string map [list \\ \\\\ \" \\\" ] $value]
-  set newline "\n"
-  set carriage "\r"
-  set tab "\t"
-  regsub -all $newline $escaped {\\n} escaped
-  regsub -all $carriage $escaped {\\r} escaped
-  regsub -all $tab $escaped {\\t} escaped
-  return $escaped
-}
-
-proc write_run_archive {} {
-  global folder top_proj_dir design_name def_file verilog_netlist sdc_file
-  global lib_setup_file design_setup_file
-
-  if {[info exists ::env(RUN_TIMESTAMP)] && $::env(RUN_TIMESTAMP) ne ""} {
-    set RUN_TIMESTAMP $::env(RUN_TIMESTAMP)
-  } else {
-    set RUN_TIMESTAMP [clock format [clock seconds] -gmt 1 -format {%Y-%m-%dT%H:%M:%SZ}]
-  }
-
-  if {[info exists ::env(RUN_GIT_COMMIT)] && $::env(RUN_GIT_COMMIT) ne ""} {
-    set run_git_commit $::env(RUN_GIT_COMMIT)
-  } else {
-    set run_git_commit "unknown"
-  }
-
-  file mkdir $folder
-  set inputs_dir [file join $folder inputs]
-  file mkdir $inputs_dir
-
-  foreach source_path [list $def_file $verilog_netlist $sdc_file $lib_setup_file $design_setup_file] {
-    file copy -force $source_path $inputs_dir
-  }
-
-  set manifest_path [file join $folder run_manifest.json]
-  set fp [open $manifest_path w]
-  puts $fp "{"
-  puts $fp [format {  "design_name": "%s",} [json_escape $design_name]]
-  puts $fp [format {  "RUN_TIMESTAMP": "%s",} [json_escape $RUN_TIMESTAMP]]
-  puts $fp [format {  "git_commit": "%s",} [json_escape $run_git_commit]]
-  puts $fp [format {  "top_proj_dir": "%s",} [json_escape $top_proj_dir]]
-  puts $fp [format {  "design_setup_file": "%s",} [json_escape $design_setup_file]]
-  puts $fp [format {  "lib_setup_file": "%s",} [json_escape $lib_setup_file]]
-  puts $fp [format {  "def_file": "%s",} [json_escape $def_file]]
-  puts $fp [format {  "verilog_netlist": "%s",} [json_escape $verilog_netlist]]
-  puts $fp [format {  "sdc_file": "%s"} [json_escape $sdc_file]]
-  puts $fp "}"
-  close $fp
-}
-
-write_run_archive
-
 # ================== helpers ==================
 
 # Returns 1 if placement looks legal, 0 otherwise.
@@ -100,42 +49,80 @@ proc is_placement_legal {} {
 }
 
 # ================== (1) read tech, libs, DEF, netlist, link ==================
-#foreach lef_file ${lefs}    { read_lef     $lef_file }
-#foreach lib_file ${libbest} { read_liberty $lib_file }
-
-
-puts $def_file 
-puts $verilog_netlist
-puts $sdc_file
-
+# foreach lef_file ${lefs}    { read_lef     $lef_file }
+# foreach lib_file ${libbest} { read_liberty $lib_file }
 
 read_def      $def_file
+
+puts $def_file 
+
 read_verilog  $verilog_netlist
 
-read_sdc $sdc_file
+ 
+puts $verilog_netlist
 
+
+read_sdc $sdc_file
 #set_propagated_clock [get_clocks *]
 set_ideal_network [all_clocks]
+
+set end_setting [clock seconds]
 
 source $rc_file
 estimate_parasitics -placement
 
 # Keep units exactly as requested
-set_cmd_units -time ns -capacitance pF -current mA -voltage V -resistance kOhm -distance um -power mW
+set_cmd_units -time ns -capacitance pF -current mA -voltage V -resistance kOhm -distance um
 set_units -power mW
 
 puts "report_design_area start"
 report_design_area 
 
-# ================== (2) Check placement legality ==================
+set start_rsz [clock seconds]
+puts "\[INFO\] Start OpenROAD RSZ ..."
+repair_design
+
+puts "report_design_area after repair_design"
+report_design_area 
+
+#repair_timing -setup -verbose
+#puts "report_design_area after repair_timing"
+#report_design_area  
+
+#repair_timing -setup -skip_gate_cloning -skip_pin_swap
+#repair_timing -sequence "sizeup,buffer,split"
+
+set end_rsz [clock seconds]
+puts "\[INFO\] OR RSZ runtime:   [expr {$end_rsz - $start_rsz}] second"
+
+
+
+set start_flow [clock seconds]
+# ================== (2) legalization if needed ==================
 puts "### Check placement legality ###"
 set placement_legal [is_placement_legal]
 if {$placement_legal} {
-  puts "Placement is legal"
+  puts "Placement is legal; skip legalization."
 } else {
-  puts stderr "ERROR: Placement is NOT legal (continuing)"
-  exit 1
+  puts "Placement NOT legal; running detailed_placement..."
+
+  detailed_placement
+  # Best-effort re-check
+  set placement_legal [is_placement_legal]
+  if {$placement_legal} {
+    puts "Placement legalized."
+  } else {
+    puts stderr "WARN: Placement still illegal after detailed_placement."
+  }
 }
+
+puts "report_design_area after legalization"
+report_design_area 
+
+# Write out baseline results after detailed placement
+write_def ${folder}/${design_name}_baseline.def
+write_verilog ${folder}/${design_name}_baseline.v
+
 
 # ================== (3) global route with auto-legalize retry ==================
 # Route layer setup (override via design_setup.tcl if provided)
@@ -145,27 +132,30 @@ if {[info exists route_clock_layers]}  { set clk_layers $route_clock_layers }  e
 set_routing_layers -signal $sig_layers -clock $clk_layers
 #set_global_routing_layer_adjustment * 0.5
 
+
+
 puts "### Global routing (first attempt) ###"
 set placement_legal 1
-if {[catch { global_route -skip_large_fanout_nets 300 -allow_congestion -congestion_report_file $crfile } gr_err]} {
+if {[catch { global_route -skip_large_fanout_nets 300 -allow_congestion -congestion_iterations 50 -congestion_report_file $crfile } gr_err]} {
   # If GR fails (e.g., unplaced inst), legalize then retry
   puts "INFO: global_route failed on first attempt: $gr_err"
   puts "INFO: running detailed_placement, then retrying global_route..."
   set placement_legal 0
+
   detailed_placement
-  if {[catch { global_route -skip_large_fanout_nets 300 -allow_congestion } gr_err2]} {
+  if {[catch { global_route -skip_large_fanout_nets 300 -allow_congestion -congestion_iterations 50} gr_err2]} {
     puts stderr "ERROR: global_route still failing after detailed_placement: $gr_err2"
     exit 2
   }
 }
 
-puts "report_design_area after legalization"
+puts "report_design_area after global_route"
 report_design_area
 
 # Estimate parasitics using global routing
 estimate_parasitics -global_routing
 
-set end [clock seconds]
+set end_flow [clock seconds]
 
 # ================== (4) evaluation metrics (OpenSTA + OpenROAD) ==================
 set TOTAL_INSTS [llength [get_cells *]]
@@ -177,7 +167,8 @@ report_units
 report_tns
 report_wns -digits 4
 report_power
-puts "report_tns"
+
+
 
 # ---- global routing overflow -----
 puts "Start Global Routing Results Analysis ..."
@@ -191,9 +182,6 @@ foreach layer [$tech getLayers] {
     lappend layers $layer
   }
 }
-
-puts "report_design_area after global_route"
-report_design_area
 
 # set layers [lsort -unique $layers]
 set gird_x_count [llength [$gcellgrid getGridX]]
@@ -223,8 +211,9 @@ puts "End Global Routing Results Analysis ..."
 report_check_types -max_slew         -violators 
 report_check_types -max_capacitance  -violators 
 report_check_types -max_fanout       -violators
+
 puts "report_design_area end"
 report_design_area 
 
-
-puts "\[INFO\] Flow running time:   [expr {$end - $start}] second"
+puts "\[INFO\] OpenROAD RSZ running time:   [expr {$end_rsz - $start_rsz}] second"
+puts "\[INFO\] Flow running time:   [expr {$end_flow - $start_flow + $end_setting - $start}] second"

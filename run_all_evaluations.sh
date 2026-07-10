@@ -56,7 +56,7 @@ cat > "${RUN_MANIFEST_JSON}" <<EOF
   "run_label": "${RUN_LABEL}",
   "run_dir": "${RUN_DIR}",
   "git_commit": "${GIT_COMMIT}",
-  "timestamp_utc": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+  "timestamp": "$(TZ="Asia/Jerusalem" date +"%Y-%m-%dT%H:%M")",
   "benchmarks": [
 $(for idx in "${!BENCHMARKS[@]}"; do
     if [[ ${idx} -lt $((${#BENCHMARKS[@]} - 1)) ]]; then
