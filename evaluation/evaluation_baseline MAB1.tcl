@@ -57,60 +57,6 @@ proc pct_improvement {before after} {
   return [expr {($after - $before) / $denom}]
 }
 
-# Percentage reduction where lower is better (e.g., slew violation count).
-proc pct_reduction {before after} {
-  set denom [expr {abs($before)}]
-  if {$denom < 1e-9} {
-    set denom 1.0
-  }
-  return [expr {($before - $after) / $denom}]
-}
-
-proc get_slew_violator_count {} {
-  if {[catch {set cnt [sta::max_slew_violation_count]} slew_err]} {
-    puts stderr "WARN: max slew violation query failed: $slew_err"
-    return 0
-  }
-  return $cnt
-}
-
-proc get_design_area_from_db {} {
-  if {[catch {set block [ord::get_db_block]} area_err]} {
-    puts stderr "WARN: failed to access db block for area: $area_err"
-    return 0.0
-  }
-
-  if {$block == "NULL"} {
-    return 0.0
-  }
-
-  set dbu [$block getDbUnitsPerMicron]
-  if {$dbu <= 0} {
-    return 0.0
-  }
-
-  set total_area_dbu2 0.0
-  foreach inst [$block getInsts] {
-    set master [$inst getMaster]
-    if {$master == "NULL"} {
-      continue
-    }
-    set width [$master getWidth]
-    set height [$master getHeight]
-    set total_area_dbu2 [expr {$total_area_dbu2 + (double($width) * double($height))}]
-  }
-
-  return [expr {$total_area_dbu2 / (double($dbu) * double($dbu))}]
-}
-
-proc collect_eval_metrics {} {
-  set wns [worst_negative_slack -max]
-  set tns [total_negative_slack -max]
-  set area [get_design_area_from_db]
-  set slew [get_slew_violator_count]
-  return [dict create wns $wns tns $tns area $area slew $slew]
-}
-
 # ================== (1) read tech, libs, DEF, netlist, link ==================
 # foreach lef_file ${lefs}    { read_lef     $lef_file }
 # foreach lib_file ${libbest} { read_liberty $lib_file }
@@ -142,7 +88,21 @@ puts "report_design_area start"
 report_design_area 
 
 set start_rsz [clock seconds]
-puts "\[INFO\] Start offline arm shootout ..."
+puts "\[INFO\] Start OpenROAD RSZ ..."
+repair_design
+
+puts "report_design_area after repair_design"
+report_design_area 
+
+# ================== simple 8-arm explore-first bandit ==================
+set bandit_py [file join $proj_dir bandit_round_robin.py]
+set bandit_state [file join $folder ${design_name}_bandit_state.json]
+
+if {[info exists ::env(BANDIT_ITERS)] && $::env(BANDIT_ITERS) ne ""} {
+  set bandit_iters $::env(BANDIT_ITERS)
+} else {
+  set bandit_iters 24
+}
 
 if {[info exists ::env(BANDIT_MAX_ITERATIONS)] && $::env(BANDIT_MAX_ITERATIONS) ne ""} {
   set bandit_max_iterations $::env(BANDIT_MAX_ITERATIONS)
@@ -156,72 +116,126 @@ if {[info exists ::env(BANDIT_MAX_REPAIRS_PER_PASS)] && $::env(BANDIT_MAX_REPAIR
   set bandit_max_repairs_per_pass 800
 }
 
-if {[info exists ::env(OFFLINE_ARM_BUDGET_SEC)] && $::env(OFFLINE_ARM_BUDGET_SEC) ne ""} {
-  set offline_arm_budget_sec $::env(OFFLINE_ARM_BUDGET_SEC)
-} else {
-  set offline_arm_budget_sec 3600
-}
-
 #set timing_guard_opts "-max_iterations $bandit_max_iterations -max_repairs_per_pass $bandit_max_repairs_per_pass"
 set timing_guard_opts ""
 
+
 file mkdir $folder
-set shootout_py [file join $proj_dir offline_shootout_state.py]
-set shootout_state [file join $folder ${design_name}_offline_shootout.json]
-set shootout_winner [file join $folder ${design_name}_offline_winner.json]
-set arm_runner_tcl [file join $proj_dir offline_arm_runner.tcl]
-
-# Minute-0 baseline metrics before any arm optimization starts.
-estimate_parasitics -placement
-set baseline_metrics [collect_eval_metrics]
-set base_wns [dict get $baseline_metrics wns]
-set base_tns [dict get $baseline_metrics tns]
-set base_area [dict get $baseline_metrics area]
-set base_slew [dict get $baseline_metrics slew]
-puts [format "\[INFO\] Baseline (minute 0): wns=%.6f tns=%.6f area=%.6f slew=%d" \
-  $base_wns $base_tns $base_area $base_slew]
-
-if {[catch {
-  exec python3 $shootout_py init \
-    --state $shootout_state \
-    --design-name $design_name \
-    --budget-sec $offline_arm_budget_sec \
-    --baseline-wns $base_wns \
-    --baseline-tns $base_tns \
-    --baseline-area $base_area \
-    --baseline-slew $base_slew
-} shootout_init_err]} {
-  puts stderr "ERROR: Failed to initialize offline shootout state: $shootout_init_err"
+if {[catch {exec python3 $bandit_py init --state $bandit_state --iterations $bandit_iters} bandit_init_err]} {
+  puts stderr "ERROR: Failed to initialize bandit policy: $bandit_init_err"
   exit 3
 }
 
-for {set arm_id 0} {$arm_id < 8} {incr arm_id} {
-  puts "\[INFO\] Launching isolated shootout arm process: arm=$arm_id"
+for {set bandit_iter 0} {$bandit_iter < $bandit_iters} {incr bandit_iter} {
+  if {[catch {exec python3 $bandit_py select --state $bandit_state} arm_id_raw]} {
+    puts stderr "ERROR: Failed to select bandit arm: $arm_id_raw"
+    exit 3
+  }
+  set arm_id [string trim $arm_id_raw]
+
+  if {$arm_id eq "-1"} {
+    puts "\[INFO\] Bandit budget exhausted."
+    break
+  }
+
+  set wns_before [worst_negative_slack -max]
+  set tns_before [total_negative_slack -max]
+  set area_before [rsz::design_area]
+  set legalization_used 0
+
+  switch -- $arm_id {
+    0 {
+      set arm_name "setup_fast_sizeup"
+      set arm_cmd "repair_timing -setup -sequence \"sizeup\" -repair_tns 20 -max_passes 25 $timing_guard_opts"
+    }
+    1 {
+      set arm_name "setup_fast_sizeup_buffer"
+      set arm_cmd "repair_timing -setup -sequence \"sizeup,buffer\" -repair_tns 20 -max_passes 30 $timing_guard_opts"
+    }
+    2 {
+      set arm_name "setup_medium_sizeup_buffer_split"
+      set arm_cmd "repair_timing -setup -sequence \"sizeup,buffer,split\" -repair_tns 40 -max_passes 40 $timing_guard_opts"
+    }
+    3 {
+      set arm_name "setup_no_clone_no_swap"
+      set arm_cmd "repair_timing -setup -skip_gate_cloning -skip_pin_swap -repair_tns 40 -max_passes 40 $timing_guard_opts"
+    }
+    4 {
+      set arm_name "setup_deep"
+      set arm_cmd "repair_timing -setup -sequence \"sizeup,buffer,split\" -repair_tns 70 -max_passes 80 $timing_guard_opts"
+    }
+    5 {
+      set arm_name "hold_light"
+      set arm_cmd "repair_timing -hold -hold_margin 0.01 -max_buffer_percent 2 -max_passes 20 $timing_guard_opts"
+    }
+    6 {
+      set arm_name "legalize_only"
+      set arm_cmd "detailed_placement"
+    }
+    7 {
+      set arm_name "noop"
+      set arm_cmd ""
+    }
+    default {
+      puts stderr "ERROR: Unknown arm id selected by policy: $arm_id"
+      exit 3
+    }
+  }
+
+  puts "\[INFO\] Bandit iter [expr {$bandit_iter + 1}] / $bandit_iters: arm=$arm_id ($arm_name)"
+
+  if {$arm_cmd ne ""} {
+    set arm_start [clock seconds]
+    if {[catch {eval $arm_cmd} arm_err]} {
+      puts stderr "WARN: Arm command failed for $arm_name: $arm_err"
+    }
+    set arm_end [clock seconds]
+    puts "\[INFO\] Arm runtime: [expr {$arm_end - $arm_start}] second"
+  }
+
+  if {![is_placement_legal]} {
+    set legalization_used 1
+    puts "\[INFO\] Placement illegal after arm pull; running detailed_placement"
+    detailed_placement
+  }
+
+  estimate_parasitics -placement
+
+  set wns_after [worst_negative_slack -max]
+  set tns_after [total_negative_slack -max]
+  set area_after [rsz::design_area]
+
+  set wns_pct [pct_improvement $wns_before $wns_after]
+  set tns_pct [pct_improvement $tns_before $tns_after]
+  set area_pct [pct_improvement $area_before $area_after]
+  set area_penalty [expr {$area_pct > 0.0 ? $area_pct : 0.0}]
+
+  # 80% timing (WNS/TNS) and 20% area/legality.
+  set reward [expr {0.4 * $wns_pct + 0.4 * $tns_pct - 0.15 * $area_penalty - 0.05 * $legalization_used}]
+
+  puts [format "\[INFO\] Bandit reward: %.6f (wns_pct=%.6f tns_pct=%.6f area_pct=%.6f legalize=%d)" \
+    $reward $wns_pct $tns_pct $area_pct $legalization_used]
+
   if {[catch {
-    exec env \
-      TOP_PROJ_DIR=$top_proj_dir \
-      PROJ_DIR=$proj_dir \
-      DESIGN_NAME=$design_name \
-      ARM_ID=$arm_id \
-      OFFLINE_ARM_BUDGET_SEC=$offline_arm_budget_sec \
-      SHOOTOUT_STATE=$shootout_state \
-      $top_proj_dir/OpenROAD/build/bin/openroad -exit $arm_runner_tcl \
-      >@stdout 2>@stdout
-  } arm_run_err]} {
-    puts stderr "ERROR: Offline arm runner failed for arm $arm_id: $arm_run_err"
+    exec python3 $bandit_py update \
+      --state $bandit_state \
+      --arm-id $arm_id \
+      --reward $reward \
+      --wns-before $wns_before \
+      --wns-after $wns_after \
+      --tns-before $tns_before \
+      --tns-after $tns_after \
+      --area-before $area_before \
+      --area-after $area_after \
+      --wns-pct $wns_pct \
+      --tns-pct $tns_pct \
+      --area-pct $area_pct \
+      --legalization-used $legalization_used
+  } bandit_update_err]} {
+    puts stderr "ERROR: Failed to update bandit state: $bandit_update_err"
     exit 3
   }
 }
-
-if {[catch {exec python3 $shootout_py finalize --state $shootout_state --winner-out $shootout_winner} winner_id_raw]} {
-  puts stderr "ERROR: Failed to finalize offline shootout winner: $winner_id_raw"
-  exit 3
-}
-set winner_id [string trim $winner_id_raw]
-puts "\[INFO\] Offline shootout winner arm: $winner_id"
-
-# Continue the rest of the flow from the exact baseline starting line.
-# Parent process has remained at minute-0 baseline state throughout shootout arm subprocesses.
 
 set end_rsz [clock seconds]
 puts "\[INFO\] OR RSZ runtime:   [expr {$end_rsz - $start_rsz}] second"

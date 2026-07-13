@@ -10,21 +10,12 @@ State is persisted to JSON after every update so runs can recover after crashes.
 from __future__ import annotations
 
 import argparse
-import json
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-ARM_NAMES = [
-    "setup_fast_sizeup",
-    "setup_fast_sizeup_buffer",
-    "setup_medium_sizeup_buffer_split",
-    "setup_no_clone_no_swap",
-    "setup_deep",
-    "hold_light",
-    "legalize_only",
-    "noop",
-]
+from arm_catalog import ARM_NAMES
+from json_state_utils import atomic_write_json, load_json
 
 
 @dataclass
@@ -62,15 +53,8 @@ class State:
         )
 
 
-def atomic_write_json(path: Path, obj: dict[str, Any]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_suffix(path.suffix + ".tmp")
-    tmp.write_text(json.dumps(obj, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    tmp.replace(path)
-
-
 def load_state(path: Path) -> State:
-    data = json.loads(path.read_text(encoding="utf-8"))
+    data = load_json(path)
     return State.from_dict(data)
 
 
