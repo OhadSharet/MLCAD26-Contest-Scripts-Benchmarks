@@ -31,10 +31,12 @@ if {[info exists ::env(FOLDER_NAME)] && $::env(FOLDER_NAME) ne ""} {
 
 set lib_setup_file [file join $script_dir $design_name lib_setup.tcl]
 set design_setup_file [file join $script_dir $design_name design_setup.tcl]
+set arm_definitions_file [file join $script_dir arm_definitions.tcl]
 
 set start [clock seconds]
 source $lib_setup_file
 source $design_setup_file
+source $arm_definitions_file
 
 # ================== helpers ==================
 
@@ -111,6 +113,28 @@ proc collect_eval_metrics {} {
   return [dict create wns $wns tns $tns area $area slew $slew]
 }
 
+proc normalize_arm_id_list {arm_ids} {
+  set normalized {}
+  foreach arm_id $arm_ids {
+    if {$arm_id eq ""} {
+      continue
+    }
+    if {[lsearch -exact $normalized $arm_id] >= 0} {
+      continue
+    }
+    if {[catch {arms::get $arm_id} arm_err]} {
+      puts stderr "ERROR: Invalid active arm id $arm_id: $arm_err"
+      exit 3
+    }
+    lappend normalized $arm_id
+  }
+  if {[llength $normalized] == 0} {
+    puts stderr "ERROR: No active arms selected for offline shootout"
+    exit 3
+  }
+  return $normalized
+}
+
 # ================== (1) read tech, libs, DEF, netlist, link ==================
 # foreach lef_file ${lefs}    { read_lef     $lef_file }
 # foreach lib_file ${libbest} { read_liberty $lib_file }
@@ -171,6 +195,14 @@ set shootout_state [file join $folder ${design_name}_offline_shootout.json]
 set shootout_winner [file join $folder ${design_name}_offline_winner.json]
 set arm_runner_tcl [file join $proj_dir offline_arm_runner.tcl]
 
+# Code-level default selection. Edit this list directly when you want a different subset.
+set offline_active_arm_ids [arms::all_ids]
+if {[info exists ::env(OFFLINE_ACTIVE_ARMS)] && $::env(OFFLINE_ACTIVE_ARMS) ne ""} {
+  set offline_active_arm_ids $::env(OFFLINE_ACTIVE_ARMS)
+}
+set offline_active_arm_ids [normalize_arm_id_list $offline_active_arm_ids]
+puts [format "\[INFO\] Active arms selected for this run: %s" [join [lmap arm_id $offline_active_arm_ids {arms::describe $arm_id}] {, }]]
+
 # Minute-0 baseline metrics before any arm optimization starts.
 estimate_parasitics -placement
 set baseline_metrics [collect_eval_metrics]
@@ -186,6 +218,8 @@ if {[catch {
     --state $shootout_state \
     --design-name $design_name \
     --budget-sec $offline_arm_budget_sec \
+    --arm-ids {*}$offline_active_arm_ids \
+    --arm-names {*}[lmap arm_id $offline_active_arm_ids {arms::name $arm_id}] \
     --baseline-wns $base_wns \
     --baseline-tns $base_tns \
     --baseline-area $base_area \
@@ -195,7 +229,7 @@ if {[catch {
   exit 3
 }
 
-for {set arm_id 0} {$arm_id < 8} {incr arm_id} {
+foreach arm_id $offline_active_arm_ids {
   puts "\[INFO\] Launching isolated shootout arm process: arm=$arm_id"
   if {[catch {
     exec env \

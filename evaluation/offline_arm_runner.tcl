@@ -22,8 +22,10 @@ set shootout_state $::env(SHOOTOUT_STATE)
 
 set lib_setup_file [file join $script_dir $design_name lib_setup.tcl]
 set design_setup_file [file join $script_dir $design_name design_setup.tcl]
+set arm_definitions_file [file join $script_dir arm_definitions.tcl]
 source $lib_setup_file
 source $design_setup_file
+source $arm_definitions_file
 
 proc is_placement_legal {} {
   if {[catch { check_placement -verbose } err]} {
@@ -86,45 +88,12 @@ set_cmd_units -time ns -capacitance pF -current mA -voltage V -resistance kOhm -
 set_units -power mW
 
 set timing_guard_opts ""
-
-switch -- $arm_id {
-  0 {
-    set arm_name "setup_fast_sizeup"
-    set arm_cmd "repair_timing -setup -sequence \"sizeup\" -repair_tns 20 -max_passes 25 $timing_guard_opts"
-  }
-  1 {
-    set arm_name "setup_fast_sizeup_buffer"
-    set arm_cmd "repair_timing -setup -sequence \"sizeup,buffer\" -repair_tns 20 -max_passes 30 $timing_guard_opts"
-  }
-  2 {
-    set arm_name "setup_medium_sizeup_buffer_split"
-    set arm_cmd "repair_timing -setup -sequence \"sizeup,buffer,split\" -repair_tns 40 -max_passes 40 $timing_guard_opts"
-  }
-  3 {
-    set arm_name "setup_no_clone_no_swap"
-    set arm_cmd "repair_timing -setup -skip_gate_cloning -skip_pin_swap -repair_tns 40 -max_passes 40 $timing_guard_opts"
-  }
-  4 {
-    set arm_name "setup_deep"
-    set arm_cmd "repair_timing -setup -sequence \"sizeup,buffer,split\" -repair_tns 70 -max_passes 80 $timing_guard_opts"
-  }
-  5 {
-    set arm_name "hold_light"
-    set arm_cmd "repair_timing -hold -hold_margin 0.01 -max_buffer_percent 2 -max_passes 20 $timing_guard_opts"
-  }
-  6 {
-    set arm_name "legalize_only"
-    set arm_cmd "detailed_placement"
-  }
-  7 {
-    set arm_name "noop"
-    set arm_cmd ""
-  }
-  default {
-    puts stderr "ERROR: Unknown arm id: $arm_id"
-    exit 3
-  }
+if {[catch {set arm_def [arms::get $arm_id]} arm_err]} {
+  puts stderr "ERROR: Unknown arm id: $arm_id"
+  exit 3
 }
+set arm_name [dict get $arm_def name]
+set arm_cmd [dict get $arm_def cmd]
 
 puts "\[INFO\] Offline arm runner arm=$arm_id ($arm_name), budget=${budget_sec}s"
 

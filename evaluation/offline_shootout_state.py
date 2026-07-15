@@ -6,7 +6,6 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-from arm_catalog import ARM_NAMES
 from json_state_utils import atomic_write_json, load_json, utc_now_iso
 
 
@@ -19,6 +18,11 @@ def _load_state(path: Path) -> dict:
 
 def cmd_init(args: argparse.Namespace) -> int:
     path = Path(args.state)
+    selected_arm_ids = [int(arm_id) for arm_id in args.arm_ids]
+    arm_names = list(args.arm_names)
+    if len(selected_arm_ids) != len(arm_names):
+        raise ValueError("arm-ids and arm-names must have the same length")
+
     state = {
         "version": STATE_VERSION,
         "mode": "offline_shootout",
@@ -26,7 +30,8 @@ def cmd_init(args: argparse.Namespace) -> int:
         "budget_sec": int(args.budget_sec),
         "created_utc": utc_now_iso(),
         "updated_utc": utc_now_iso(),
-        "arm_names": ARM_NAMES,
+        "selected_arm_ids": selected_arm_ids,
+        "arm_names": arm_names,
         "baseline": {
             "wns": float(args.baseline_wns),
             "tns": float(args.baseline_tns),
@@ -45,7 +50,8 @@ def cmd_record(args: argparse.Namespace) -> int:
     state = _load_state(path)
 
     arm_id = int(args.arm_id)
-    if arm_id < 0 or arm_id >= len(ARM_NAMES):
+    selected_arm_ids = [int(item) for item in state.get("selected_arm_ids", [])]
+    if arm_id not in selected_arm_ids:
         raise ValueError(f"arm_id out of range: {arm_id}")
 
     record = {
@@ -85,7 +91,8 @@ def cmd_record_final(args: argparse.Namespace) -> int:
     state = _load_state(path)
 
     arm_id = int(args.arm_id)
-    if arm_id < 0 or arm_id >= len(ARM_NAMES):
+    selected_arm_ids = [int(item) for item in state.get("selected_arm_ids", [])]
+    if arm_id not in selected_arm_ids:
         raise ValueError(f"arm_id out of range: {arm_id}")
 
     baseline = state["baseline"]
@@ -190,6 +197,8 @@ def build_parser() -> argparse.ArgumentParser:
     p_init.add_argument("--state", required=True)
     p_init.add_argument("--design-name", required=True)
     p_init.add_argument("--budget-sec", required=True, type=int)
+    p_init.add_argument("--arm-ids", required=True, nargs="+", type=int)
+    p_init.add_argument("--arm-names", required=True, nargs="+")
     p_init.add_argument("--baseline-wns", required=True, type=float)
     p_init.add_argument("--baseline-tns", required=True, type=float)
     p_init.add_argument("--baseline-area", required=True, type=float)
