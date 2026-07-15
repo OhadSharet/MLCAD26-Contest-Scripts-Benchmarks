@@ -10,4 +10,12 @@ ARM_NAMES = [
     "hold_light",
     "legalize_only",
     "noop",
+    "repair_slew_cap_micro",
+    "setup_micro_sizeup",
+    "setup_micro_buffer",
+    "setup_wns_scalpel",
+    "setup_margin_push",
+    "setup_topo_only",
+    "hold_micro_safe",
+    "slew_margin_tighten",
 ]
