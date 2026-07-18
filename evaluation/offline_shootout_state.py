@@ -129,6 +129,8 @@ def cmd_record_final(args: argparse.Namespace) -> int:
 
     reward = 0.35 * wns_pct + 0.35 * tns_pct + 0.20 * slew_pct - 0.08 * area_penalty - 0.02 * legalization_penalty
 
+    #wns - worst negative slack, tns - total negative slack, slew - slew violation, area - cell area
+
     record = {
         "arm_id": arm_id,
         "arm_name": args.arm_name,

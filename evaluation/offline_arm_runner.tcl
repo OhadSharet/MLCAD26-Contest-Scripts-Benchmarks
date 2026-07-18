@@ -101,6 +101,8 @@ set arm_start [clock seconds]
 set arm_iterations 0
 set arm_legalization_events 0
 set arm_errors 0
+set arm_hard_fail 0
+set arm_forced_reward -10000.0
 
 while {1} {
   set elapsed_now [expr {[clock seconds] - $arm_start}]
@@ -115,13 +117,14 @@ while {1} {
     }
   }
 
-  if {![is_placement_legal]} {
-    incr arm_legalization_events
-    puts "\[INFO\] Placement illegal after arm step; running detailed_placement"
-    if {[catch {detailed_placement} dpl_err]} {
-      incr arm_errors
-      puts stderr "WARN: detailed_placement failed during arm $arm_name: $dpl_err"
-    }
+  incr arm_legalization_events
+  puts "\[INFO\] Applying mandatory legalization tax after arm step"
+  if {[catch {detailed_placement} dpl_err]} {
+    incr arm_errors
+    set arm_hard_fail 1
+    puts stderr "WARN: detailed_placement failed during arm $arm_name: $dpl_err"
+    puts stderr "WARN: Marking arm as hard-fail and forcing reward $arm_forced_reward"
+    break
   }
 
   estimate_parasitics -placement
@@ -136,22 +139,47 @@ set final_area [dict get $final_metrics area]
 set final_slew [dict get $final_metrics slew]
 
 set shootout_py [file join $proj_dir offline_shootout_state.py]
-if {[catch {
-  exec python3 $shootout_py record-final \
-    --state $shootout_state \
-    --arm-id $arm_id \
-    --arm-name $arm_name \
-    --iterations $arm_iterations \
-    --elapsed-sec $arm_elapsed \
-    --legalization-events $arm_legalization_events \
-    --arm-errors $arm_errors \
-    --final-wns $final_wns \
-    --final-tns $final_tns \
-    --final-area $final_area \
-    --final-slew $final_slew
-} record_err]} {
-  puts stderr "ERROR: Failed to record final arm results: $record_err"
-  exit 3
+if {$arm_hard_fail} {
+  if {[catch {
+    exec python3 $shootout_py record \
+      --state $shootout_state \
+      --arm-id $arm_id \
+      --arm-name $arm_name \
+      --iterations $arm_iterations \
+      --elapsed-sec $arm_elapsed \
+      --reward $arm_forced_reward \
+      --legalization-events $arm_legalization_events \
+      --arm-errors $arm_errors \
+      --final-wns $final_wns \
+      --final-tns $final_tns \
+      --final-area $final_area \
+      --final-slew $final_slew \
+      --wns-pct 0.0 \
+      --tns-pct 0.0 \
+      --area-pct 0.0 \
+      --slew-pct 0.0
+  } record_err]} {
+    puts stderr "ERROR: Failed to record hard-fail arm results: $record_err"
+    exit 3
+  }
+} else {
+  if {[catch {
+    exec python3 $shootout_py record-final \
+      --state $shootout_state \
+      --arm-id $arm_id \
+      --arm-name $arm_name \
+      --iterations $arm_iterations \
+      --elapsed-sec $arm_elapsed \
+      --legalization-events $arm_legalization_events \
+      --arm-errors $arm_errors \
+      --final-wns $final_wns \
+      --final-tns $final_tns \
+      --final-area $final_area \
+      --final-slew $final_slew
+  } record_err]} {
+    puts stderr "ERROR: Failed to record final arm results: $record_err"
+    exit 3
+  }
 }
 
 puts [format "\[INFO\] Arm %d done: iter=%d elapsed=%ds final_wns=%.6f final_tns=%.6f final_area=%.6f final_slew=%.2f" \

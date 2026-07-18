@@ -11,14 +11,14 @@ namespace eval arms {
     5 [dict create name "hold_light" cmd {repair_timing -hold -hold_margin 0.01 -max_buffer_percent 2 -max_passes 20}] \
     6 [dict create name "legalize_only" cmd {detailed_placement}] \
     7 [dict create name "noop" cmd {}] \
-    8 [dict create name "repair_slew_cap_micro" cmd {repair_design -max_passes 5}] \
+    8 [dict create name "repair_slew_cap_micro" cmd {repair_design}] \
     9 [dict create name "setup_micro_sizeup" cmd {repair_timing -setup -sequence "sizeup" -repair_tns 5 -max_passes 3}] \
     10 [dict create name "setup_micro_buffer" cmd {repair_timing -setup -sequence "buffer" -repair_tns 5 -max_passes 3}] \
     11 [dict create name "setup_wns_scalpel" cmd {repair_timing -setup -repair_tns 1 -max_passes 5}] \
     12 [dict create name "setup_margin_push" cmd {repair_timing -setup -setup_margin 0.02 -repair_tns 5 -max_passes 3}] \
     13 [dict create name "setup_topo_only" cmd {repair_timing -setup -skip_buffer_insertion -skip_gate_cloning -repair_tns 10 -max_passes 5}] \
     14 [dict create name "hold_micro_safe" cmd {repair_timing -hold -max_buffer_percent 0.5 -max_passes 2}] \
-    15 [dict create name "slew_margin_tighten" cmd {repair_design -slew_margin 0.05 -cap_margin 0.05 -max_passes 5}]
+    15 [dict create name "slew_margin_tighten" cmd {repair_design -slew_margin 0.05 -cap_margin 0.05}]
   ]
 }
 
