@@ -10,6 +10,10 @@ if {[info exists ::env(TOP_PROJ_DIR)] && $::env(TOP_PROJ_DIR) ne ""} {
   set top_proj_dir $default_top_proj_dir
 }
 
+set evaluation_dir [file join $top_proj_dir evaluation]
+set algorithms_dir [file join $top_proj_dir {RL code} algorithms]
+set core_shared_dir [file join $top_proj_dir {RL code} core_shared]
+
 if {[info exists ::env(PROJ_DIR)] && $::env(PROJ_DIR) ne ""} {
   set proj_dir $::env(PROJ_DIR)
 } else {
@@ -29,9 +33,9 @@ if {[info exists ::env(FOLDER_NAME)] && $::env(FOLDER_NAME) ne ""} {
   set folder [file join $proj_dir results ${design_name}_evaluation]
 }
 
-set lib_setup_file [file join $script_dir $design_name lib_setup.tcl]
-set design_setup_file [file join $script_dir $design_name design_setup.tcl]
-set arm_definitions_file [file join $script_dir arm_definitions.tcl]
+set lib_setup_file [file join $evaluation_dir $design_name lib_setup.tcl]
+set design_setup_file [file join $evaluation_dir $design_name design_setup.tcl]
+set arm_definitions_file [file join $core_shared_dir arm_definitions.tcl]
 
 set start [clock seconds]
 source $lib_setup_file
@@ -190,10 +194,10 @@ if {[info exists ::env(OFFLINE_ARM_BUDGET_SEC)] && $::env(OFFLINE_ARM_BUDGET_SEC
 set timing_guard_opts ""
 
 file mkdir $folder
-set shootout_py [file join $proj_dir offline_shootout_state.py]
+set shootout_py [file join $algorithms_dir offline_shootout_state.py]
 set shootout_state [file join $folder ${design_name}_offline_shootout.json]
 set shootout_winner [file join $folder ${design_name}_offline_winner.json]
-set arm_runner_tcl [file join $proj_dir offline_arm_runner.tcl]
+set arm_runner_tcl offline_arm_runner.tcl
 
 # Code-level default selection. Edit this list directly when you want a different subset.
 set offline_active_arm_ids [arms::all_ids]
@@ -231,7 +235,9 @@ if {[catch {
 
 foreach arm_id $offline_active_arm_ids {
   puts "\[INFO\] Launching isolated shootout arm process: arm=$arm_id"
+  set original_dir [pwd]
   if {[catch {
+    cd $proj_dir
     exec env \
       TOP_PROJ_DIR=$top_proj_dir \
       PROJ_DIR=$proj_dir \
@@ -242,9 +248,11 @@ foreach arm_id $offline_active_arm_ids {
       $top_proj_dir/OpenROAD/build/bin/openroad -exit $arm_runner_tcl \
       >@stdout 2>@stdout
   } arm_run_err]} {
+    cd $original_dir
     puts stderr "ERROR: Offline arm runner failed for arm $arm_id: $arm_run_err"
     exit 3
   }
+  cd $original_dir
 }
 
 if {[catch {exec python3 $shootout_py finalize --state $shootout_state --winner-out $shootout_winner} winner_id_raw]} {

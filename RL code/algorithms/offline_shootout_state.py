@@ -4,7 +4,16 @@
 from __future__ import annotations
 
 import argparse
+import sys
 from pathlib import Path
+
+SCRIPT_DIR = Path(__file__).resolve().parent
+CORE_SHARED_DIR = SCRIPT_DIR.parent / "core_shared"
+EVALUATION_DIR = SCRIPT_DIR.parent.parent / "evaluation"
+if str(CORE_SHARED_DIR) not in sys.path:
+    sys.path.insert(0, str(CORE_SHARED_DIR))
+if str(EVALUATION_DIR) not in sys.path:
+    sys.path.insert(0, str(EVALUATION_DIR))
 
 from json_state_utils import atomic_write_json, load_json, utc_now_iso
 

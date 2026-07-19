@@ -15,14 +15,18 @@ if {[info exists ::env(PROJ_DIR)] && $::env(PROJ_DIR) ne ""} {
   set proj_dir $script_dir
 }
 
+set evaluation_dir [file join $top_proj_dir evaluation]
+set algorithms_dir [file join $top_proj_dir {RL code} algorithms]
+set core_shared_dir [file join $top_proj_dir {RL code} core_shared]
+
 set design_name $::env(DESIGN_NAME)
 set arm_id $::env(ARM_ID)
 set budget_sec $::env(OFFLINE_ARM_BUDGET_SEC)
 set shootout_state $::env(SHOOTOUT_STATE)
 
-set lib_setup_file [file join $script_dir $design_name lib_setup.tcl]
-set design_setup_file [file join $script_dir $design_name design_setup.tcl]
-set arm_definitions_file [file join $script_dir arm_definitions.tcl]
+set lib_setup_file [file join $evaluation_dir $design_name lib_setup.tcl]
+set design_setup_file [file join $evaluation_dir $design_name design_setup.tcl]
+set arm_definitions_file [file join $core_shared_dir arm_definitions.tcl]
 source $lib_setup_file
 source $design_setup_file
 source $arm_definitions_file
@@ -138,7 +142,7 @@ set final_tns [dict get $final_metrics tns]
 set final_area [dict get $final_metrics area]
 set final_slew [dict get $final_metrics slew]
 
-set shootout_py [file join $proj_dir offline_shootout_state.py]
+set shootout_py [file join $algorithms_dir offline_shootout_state.py]
 if {$arm_hard_fail} {
   if {[catch {
     exec python3 $shootout_py record \

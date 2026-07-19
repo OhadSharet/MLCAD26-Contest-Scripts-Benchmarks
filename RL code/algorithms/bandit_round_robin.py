@@ -1,3 +1,13 @@
+from __future__ import annotations
+
+import sys
+from pathlib import Path
+
+SCRIPT_DIR = Path(__file__).resolve().parent
+CORE_SHARED_DIR = SCRIPT_DIR.parent / "core_shared"
+if str(CORE_SHARED_DIR) not in sys.path:
+    sys.path.insert(0, str(CORE_SHARED_DIR))
+
 #!/usr/bin/env python3
 """Simple explore-first multi-armed bandit policy.
 
